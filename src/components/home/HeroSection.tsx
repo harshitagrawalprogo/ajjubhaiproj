@@ -20,7 +20,6 @@ export default function HeroSection() {
     timerRef.current = setTimeout(() => setContentVisible(false), 5500);
   };
 
-  // Start the hide timer on first mount
   useEffect(() => {
     startHideTimer();
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
@@ -66,8 +65,7 @@ export default function HeroSection() {
       <div
         className="absolute inset-0"
         style={{
-          background:
-            "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(201,168,76,0.12) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(201,168,76,0.12) 0%, transparent 70%)",
           zIndex: 2,
         }}
       />
@@ -83,7 +81,6 @@ export default function HeroSection() {
             className="relative max-w-6xl mx-auto px-6 pt-24 pb-12 flex flex-col items-center text-center"
             style={{ zIndex: 3 }}
           >
-
             {/* Top badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -153,7 +150,7 @@ export default function HeroSection() {
 
             {/* Floating stat cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-3xl">
-              {floatingCards.map(({ icon: Icon, label, delay }, i) => (
+              {floatingCards.map(({ icon: Icon, label, delay }) => (
                 <motion.div
                   key={label}
                   initial={{ opacity: 0, y: 24 }}
