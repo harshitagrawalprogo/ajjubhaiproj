@@ -1,64 +1,51 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BookOpen, GraduationCap, Library, Users } from "lucide-react";
+import { ArrowRight, BookOpen, GraduationCap, Library, Youtube } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const floatingCards = [
-  { icon: BookOpen, label: "10,000+ Resources", delay: 0 },
-  { icon: GraduationCap, label: "50+ Programs", delay: 0.2 },
-  { icon: Library, label: "Expert Faculty", delay: 0.4 },
-  { icon: Users, label: "5000+ Alumni", delay: 0.6 },
+  { icon: BookOpen, label: "100+ Programs Conducted", delay: 0 },
+  { icon: GraduationCap, label: "3700+ Hours on YouTube", delay: 0.2 },
+  { icon: Library, label: "30+ IRINS Institutes", delay: 0.4 },
+  { icon: Youtube, label: "Pan-India Reach", delay: 0.6 },
 ];
 
 export default function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Rich layered background */}
-      <div className="absolute inset-0 bg-[#0d1b3e]" />
+      {/* Video background */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ zIndex: 0 }}
+      >
+        <source src="/banner-video-1-1.mp4" type="video/mp4" />
+      </video>
+
+      {/* Dark overlay to make text readable */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: "linear-gradient(to bottom, rgba(13,27,62,0.82) 0%, rgba(13,27,62,0.72) 50%, rgba(13,27,62,0.90) 100%)",
+          zIndex: 1,
+        }}
+      />
+
+      {/* Additional subtle gold gradient overlay */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(201,168,76,0.18) 0%, transparent 70%), radial-gradient(ellipse 60% 50% at 100% 100%, rgba(26,47,94,0.8) 0%, transparent 60%)",
-        }}
-      />
-
-      {/* Animated bokeh orbs */}
-      {[
-        { w: 520, h: 520, l: "-8%", t: "5%", dur: 8 },
-        { w: 360, h: 360, l: "60%", t: "-10%", dur: 11 },
-        { w: 280, h: 280, l: "80%", t: "55%", dur: 9 },
-        { w: 200, h: 200, l: "20%", t: "70%", dur: 13 },
-      ].map((orb, i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full pointer-events-none"
-          style={{
-            width: orb.w,
-            height: orb.h,
-            left: orb.l,
-            top: orb.t,
-            background:
-              i % 2 === 0
-                ? "radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%)"
-                : "radial-gradient(circle, rgba(100,140,220,0.10) 0%, transparent 70%)",
-          }}
-          animate={{ y: [0, -24, 0], x: [0, 12, 0], scale: [1, 1.06, 1] }}
-          transition={{ duration: orb.dur, repeat: Infinity, ease: "easeInOut", delay: i * 1.2 }}
-        />
-      ))}
-
-      {/* Fine dot grid */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.06]"
-        style={{
-          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
+            "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(201,168,76,0.12) 0%, transparent 70%)",
+          zIndex: 2,
         }}
       />
 
       {/* Content */}
-      <div className="relative z-10 max-w-6xl mx-auto px-6 pt-24 pb-12 flex flex-col items-center text-center">
+      <div className="relative max-w-6xl mx-auto px-6 pt-24 pb-12 flex flex-col items-center text-center" style={{ zIndex: 3 }}>
 
         {/* Top badge */}
         <motion.div
@@ -69,7 +56,7 @@ export default function HeroSection() {
         >
           <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold tracking-widest uppercase border border-[#c9a84c]/40 text-[#c9a84c] bg-[#c9a84c]/10 backdrop-blur-sm">
             <BookOpen size={13} />
-            India's Premier Library & Information Science Platform
+            India's Premier Library &amp; Information Science Platform
           </span>
         </motion.div>
 
@@ -80,15 +67,14 @@ export default function HeroSection() {
           transition={{ duration: 0.85, delay: 0.2 }}
           className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.05] tracking-tight mb-6"
         >
-          <span className="text-white">Empowering the </span>
+          <span className="text-white">Learn. Inspire. </span>
           <br />
           <span
             className="bg-clip-text text-transparent"
             style={{ backgroundImage: "linear-gradient(135deg, #f0d080 0%, #c9a84c 50%, #e8b84b 100%)" }}
           >
-            Knowledge
+            Serve.
           </span>
-          <span className="text-white"> Keepers</span>
         </motion.h1>
 
         {/* Subtitle */}
@@ -96,9 +82,9 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.45 }}
-          className="text-white/55 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
+          className="text-white/70 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
         >
-          World-class training, cutting-edge research, and a thriving professional community — all built to advance Library & Information Science in India and beyond.
+          A professional Public Charitable Trust advancing the Library &amp; Information Science profession through world-class training, technology implementation, and research across India.
         </motion.p>
 
         {/* CTA buttons */}
@@ -122,9 +108,9 @@ export default function HeroSection() {
           <Button
             asChild
             size="lg"
-            className="px-8 py-6 text-base font-semibold rounded-xl bg-white/8 border border-white/20 text-white backdrop-blur-sm hover:bg-white/15 hover:border-white/40 transition-all duration-300 hover:-translate-y-0.5"
+            className="px-8 py-6 text-base font-semibold rounded-xl bg-white/10 border border-white/25 text-white backdrop-blur-sm hover:bg-white/20 hover:border-white/40 transition-all duration-300 hover:-translate-y-0.5"
           >
-            <Link to="/community">Join Community</Link>
+            <Link to="/contact">Contact Us</Link>
           </Button>
         </motion.div>
 
@@ -137,7 +123,7 @@ export default function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.8 + delay }}
               whileHover={{ y: -4 }}
-              className="flex flex-col items-center gap-2 px-4 py-5 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm cursor-default"
+              className="flex flex-col items-center gap-2 px-4 py-5 rounded-2xl border border-white/15 bg-white/8 backdrop-blur-md cursor-default"
             >
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center"
@@ -145,7 +131,7 @@ export default function HeroSection() {
               >
                 <Icon size={20} className="text-[#c9a84c]" />
               </div>
-              <span className="text-white/75 text-xs font-medium text-center leading-tight">{label}</span>
+              <span className="text-white/80 text-xs font-medium text-center leading-tight">{label}</span>
             </motion.div>
           ))}
         </div>

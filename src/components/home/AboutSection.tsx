@@ -8,9 +8,9 @@ export default function AboutSection() {
   const inView = useInView(ref, { once: true, margin: "-100px" });
 
   const values = [
-    { icon: Target, title: "Mission", text: "To advance the field of Library & Information Science through world-class training, research, and community building." },
-    { icon: Eye, title: "Vision", text: "To be the foremost institution shaping the future of information professionals globally." },
-    { icon: Lightbulb, title: "Purpose", text: "Founded to bridge the gap between traditional library science and modern information technology." },
+    { icon: Target, title: "Mission", text: "To bridge the gap between LIS education and the profession and assist libraries with modern technology through training, research, and consultancy." },
+    { icon: Eye, title: "Vision", text: "To be the foremost destination for LIS professionals to acquire cutting-edge skills and provide best-in-class technology-based solutions." },
+    { icon: Lightbulb, title: "Purpose", text: "Established as a Public Charitable Trust to work for the development of the Library & Information Science profession through education, literature, and research." },
   ];
 
   return (
@@ -29,22 +29,21 @@ export default function AboutSection() {
               Shaping the Future of Information Science
             </h2>
             <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-              LIS Academy is India's premier institution dedicated to Library and Information Science. 
-              We bring together researchers, librarians, and technology professionals to advance knowledge 
-              management, digital literacy, and information access across the nation.
+              LIS Academy is a professional Public Charitable Trust established to advance the Library &amp; Information Science profession.
+              We specialize in library automation, digital repositories, research information systems, and accreditation support — bridging the gap between LIS education and modern technology.
             </p>
             <div className="flex gap-8">
               <div>
-                <div className="text-3xl font-serif font-bold text-foreground">15+</div>
-                <div className="text-sm text-muted-foreground">Years of Excellence</div>
+                <div className="text-3xl font-serif font-bold text-foreground">100+</div>
+                <div className="text-sm text-muted-foreground">Programs Conducted</div>
               </div>
               <div>
-                <div className="text-3xl font-serif font-bold text-foreground">50+</div>
-                <div className="text-sm text-muted-foreground">Expert Faculty</div>
+                <div className="text-3xl font-serif font-bold text-foreground">30+</div>
+                <div className="text-sm text-muted-foreground">IRINS Institutes</div>
               </div>
               <div>
                 <div className="text-3xl font-serif font-bold text-foreground">Pan India</div>
-                <div className="text-sm text-muted-foreground">Reach & Impact</div>
+                <div className="text-sm text-muted-foreground">Reach &amp; Impact</div>
               </div>
             </div>
           </motion.div>

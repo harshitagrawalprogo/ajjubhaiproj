@@ -14,9 +14,9 @@ const contactSchema = z.object({
 });
 
 const contactInfo = [
-  { icon: MapPin, label: "Address", value: "LIS Academy, Sector 14, New Delhi – 110001, India" },
-  { icon: Mail, label: "Email", value: "info@lisacademy.in" },
-  { icon: Phone, label: "Phone", value: "+91 98765 43210" },
+  { icon: MapPin, label: "Address", value: "7/29, Vijayalakshmi Complex, 1st Main Road, 1st Phase, 2nd Stage, Gokul, Bengaluru – 560054" },
+  { icon: Mail, label: "Email", value: "info@lisacademy.org" },
+  { icon: Phone, label: "Phone", value: "080-35006965" },
   { icon: Clock, label: "Hours", value: "Mon–Fri: 9:00 AM – 6:00 PM IST" },
 ];
 
@@ -55,7 +55,7 @@ export default function Contact() {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
-  const inputClass = "w-full px-4 py-2.5 rounded-lg bg-white/8 border border-white/15 text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-[#c9a84c]/50 transition-colors";
+  const inputClass = "w-full px-4 py-2.5 rounded-lg text-white text-sm focus:outline-none transition-colors";
   const labelClass = "text-sm font-medium text-white/70 mb-1.5 block";
 
   return (
@@ -84,8 +84,8 @@ export default function Contact() {
                 </div>
 
                 {/* Map placeholder */}
-                <div className="mt-10 rounded-xl border border-white/10 bg-white/5 h-48 flex items-center justify-center">
-                  <span className="text-sm text-white/40">📍 New Delhi, India</span>
+                <div className="mt-10 rounded-xl h-48 flex items-center justify-center" style={{ border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)" }}>
+                  <span className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>📍 Bengaluru, Karnataka, India</span>
                 </div>
               </FadeIn>
             </div>
@@ -99,18 +99,43 @@ export default function Contact() {
                     <div className="grid sm:grid-cols-2 gap-5">
                       <div>
                         <label className={labelClass}>Name</label>
-                        <input value={form.name} onChange={(e) => updateField("name", e.target.value)} placeholder="Your name" className={inputClass} />
+                        <input
+                          value={form.name}
+                          onChange={(e) => updateField("name", e.target.value)}
+                          placeholder="Your name"
+                          className={inputClass}
+                          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)", outline: "none" }}
+                          onFocus={e => (e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)")}
+                          onBlur={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)")}
+                        />
                         {errors.name && <p className="text-xs text-red-400 mt-1">{errors.name}</p>}
                       </div>
                       <div>
                         <label className={labelClass}>Email</label>
-                        <input type="email" value={form.email} onChange={(e) => updateField("email", e.target.value)} placeholder="your@email.com" className={inputClass} />
+                        <input
+                          type="email"
+                          value={form.email}
+                          onChange={(e) => updateField("email", e.target.value)}
+                          placeholder="your@email.com"
+                          className={inputClass}
+                          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)", outline: "none" }}
+                          onFocus={e => (e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)")}
+                          onBlur={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)")}
+                        />
                         {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
                       </div>
                     </div>
                     <div>
                       <label className={labelClass}>Subject</label>
-                      <input value={form.subject} onChange={(e) => updateField("subject", e.target.value)} placeholder="How can we help?" className={inputClass} />
+                      <input
+                        value={form.subject}
+                        onChange={(e) => updateField("subject", e.target.value)}
+                        placeholder="How can we help?"
+                        className={inputClass}
+                        style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)", outline: "none" }}
+                        onFocus={e => (e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)")}
+                        onBlur={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)")}
+                      />
                       {errors.subject && <p className="text-xs text-red-400 mt-1">{errors.subject}</p>}
                     </div>
                     <div>
@@ -121,6 +146,9 @@ export default function Contact() {
                         placeholder="Tell us more..."
                         rows={5}
                         className={inputClass + " resize-none"}
+                        style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)", outline: "none" }}
+                        onFocus={e => (e.currentTarget.style.borderColor = "rgba(201,168,76,0.5)")}
+                        onBlur={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)")}
                       />
                       {errors.message && <p className="text-xs text-red-400 mt-1">{errors.message}</p>}
                     </div>

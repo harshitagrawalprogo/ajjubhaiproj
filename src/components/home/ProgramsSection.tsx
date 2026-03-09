@@ -7,26 +7,26 @@ import { Link } from "react-router-dom";
 const programs = [
   {
     icon: GraduationCap,
-    title: "Finishing School",
-    description: "Comprehensive professional development program designed to make graduates industry-ready with practical skills.",
+    title: "Library Automation (Koha)",
+    description: "Expert implementation and training for Koha – the world's most widely used open-source Integrated Library System across universities and colleges.",
     color: "bg-accent",
   },
   {
     icon: FlaskConical,
-    title: "Research Training",
-    description: "Hands-on research methodology training covering qualitative, quantitative, and mixed-method approaches.",
+    title: "Digital Repositories",
+    description: "Setup and training for DSpace and EPrints digital repository platforms for institutional repositories and digital preservation.",
     color: "bg-gold-light",
   },
   {
     icon: Wrench,
-    title: "Workshops",
-    description: "Intensive skill-building workshops on emerging topics in library automation, AI, and digital curation.",
+    title: "IRINS & Research Systems",
+    description: "Implementation of the IRINS (Indian Research Information Network System) to manage and showcase institutional research outputs.",
     color: "bg-accent",
   },
   {
     icon: Award,
-    title: "Certification Courses",
-    description: "Industry-recognized certification programs in information management, cataloging, and digital preservation.",
+    title: "Ranking & Accreditation",
+    description: "Consultancy and support for NBA, NAAC, and NIRF ranking processes with a focus on library and information metrics.",
     color: "bg-gold-light",
   },
 ];

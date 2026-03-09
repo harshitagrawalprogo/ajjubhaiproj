@@ -36,20 +36,20 @@ export default function Footer() {
               <span className="font-serif font-bold text-xl">LIS Academy</span>
             </div>
             <p className="text-primary-foreground/70 text-sm leading-relaxed mb-6">
-              India's leading platform for Library & Information Science education, research, and professional development.
+              A professional Public Charitable Trust advancing the Library &amp; Information Science profession through technology, training, and research.
             </p>
             <div className="space-y-3 text-sm text-primary-foreground/70">
-              <div className="flex items-center gap-2">
-                <MapPin size={14} />
-                <span>New Delhi, India</span>
+              <div className="flex items-start gap-2">
+                <MapPin size={14} className="mt-0.5 shrink-0" />
+                <span>7/29, Vijayalakshmi Complex, 1st Main Road, Gokul, Bengaluru – 560054</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail size={14} />
-                <span>info@lisacademy.in</span>
+                <span>info@lisacademy.org</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone size={14} />
-                <span>+91 98765 43210</span>
+                <span>080-35006965</span>
               </div>
             </div>
           </div>

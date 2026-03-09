@@ -5,28 +5,28 @@ import { Button } from "@/components/ui/button";
 
 const events = [
   {
-    title: "National Conference on Digital Libraries 2026",
-    date: "April 15–17, 2026",
-    location: "New Delhi",
+    title: "LISACON-2024: Intelligent Libraries",
+    date: "Oct 17–19, 2024",
+    location: "Bharathidasan University, Tiruchirappalli",
     tag: "Conference",
   },
   {
-    title: "Workshop on AI in Information Retrieval",
-    date: "May 8–9, 2026",
-    location: "Bangalore",
-    tag: "Workshop",
+    title: "Monthly Lecture Series on LIS Topics",
+    date: "Every Month (Ongoing)",
+    location: "Online (Webinar)",
+    tag: "Lecture Series",
   },
   {
-    title: "Research Methodology Bootcamp",
-    date: "June 1–5, 2026",
-    location: "Online",
+    title: "Koha Library Automation Training",
+    date: "Rolling Admissions",
+    location: "Bengaluru & Online",
     tag: "Training",
   },
   {
-    title: "Annual LIS Professionals Meet",
-    date: "July 20, 2026",
-    location: "Mumbai",
-    tag: "Networking",
+    title: "NAAC/NBA/NIRF Accreditation Workshop",
+    date: "Quarterly",
+    location: "Pan-India / Online",
+    tag: "Workshop",
   },
 ];
 
