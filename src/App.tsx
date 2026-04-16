@@ -13,6 +13,11 @@ import KnowledgeHub from "./pages/KnowledgeHub.tsx";
 import Community from "./pages/Community.tsx";
 import Contact from "./pages/Contact.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import LibraryAutomation from "./pages/LibraryAutomation.tsx";
+import Membership from "./pages/Membership.tsx";
+import AdminLogin from "./pages/admin/AdminLogin.tsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
+import AdminMemberDetail from "./pages/admin/AdminMemberDetail.tsx";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +37,7 @@ const App = () => (
       <BrowserRouter>
         <ScrollToTop />
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<Index />} />
           <Route path="/about" element={<About />} />
           <Route path="/programs" element={<Programs />} />
@@ -40,6 +46,14 @@ const App = () => (
           <Route path="/knowledge" element={<KnowledgeHub />} />
           <Route path="/community" element={<Community />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/library-automation" element={<LibraryAutomation />} />
+          <Route path="/membership" element={<Membership />} />
+
+          {/* Admin routes (not linked from nav) */}
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/members/:id" element={<AdminMemberDetail />} />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

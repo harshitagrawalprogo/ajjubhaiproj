@@ -7,27 +7,31 @@ import { Link } from "react-router-dom";
 const programs = [
   {
     icon: GraduationCap,
-    title: "Library Automation (Koha)",
-    description: "Expert implementation and training for Koha – the world's most widely used open-source Integrated Library System across universities and colleges.",
+    title: "Library Technology Training",
+    description: "Hands-on training for LIS professionals on automation, digital services, information tools, and emerging practices in modern libraries.",
     color: "bg-accent",
+    link: "/library-automation",
   },
   {
     icon: FlaskConical,
-    title: "Digital Repositories",
-    description: "Setup and training for DSpace and EPrints digital repository platforms for institutional repositories and digital preservation.",
+    title: "Research Productivity Support",
+    description: "Workshops and seminars for teachers and research scholars to improve publication quality, visibility, and institutional research performance.",
     color: "bg-gold-light",
+    link: "/programs",
   },
   {
     icon: Wrench,
-    title: "IRINS & Research Systems",
-    description: "Implementation of the IRINS (Indian Research Information Network System) to manage and showcase institutional research outputs.",
+    title: "Institutional Technology Services",
+    description: "Implementation support for Koha, DSpace, EPrints, and IRINS to strengthen library systems, repositories, and research information management.",
     color: "bg-accent",
+    link: "/programs",
   },
   {
     icon: Award,
-    title: "Ranking & Accreditation",
-    description: "Consultancy and support for NBA, NAAC, and NIRF ranking processes with a focus on library and information metrics.",
+    title: "Accreditation and Ranking Consultancy",
+    description: "Consultancy for NBA, NAAC, and NIRF readiness, especially around library services, research visibility, and documentation support.",
     color: "bg-gold-light",
+    link: "/programs",
   },
 ];
 
@@ -48,10 +52,10 @@ export default function ProgramsSection() {
             Our Programs
           </span>
           <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            Discover Your Learning Path
+            Services Built Around Real Institutional Needs
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Choose from our carefully designed programs that blend academic rigor with practical application.
+            LIS Academy combines professional development, technology implementation, and academic support for libraries, colleges, universities, and researchers.
           </p>
         </motion.div>
 
@@ -62,16 +66,18 @@ export default function ProgramsSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.1 + i * 0.1 }}
-              className="group p-6 rounded-xl bg-card border border-border hover-lift cursor-pointer"
+              className="group p-0 rounded-xl bg-card border border-border hover-lift cursor-pointer flex flex-col"
             >
-              <div className={`w-14 h-14 rounded-xl ${program.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
-                <program.icon className="text-primary" size={26} />
-              </div>
-              <h3 className="font-serif text-xl font-semibold text-foreground mb-3">{program.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">{program.description}</p>
-              <span className="inline-flex items-center gap-1 text-sm font-medium text-primary group-hover:gap-2 transition-all">
-                Learn more <ArrowRight size={14} />
-              </span>
+              <Link to={program.link} className="flex-grow flex flex-col p-6 h-full">
+                <div className={`w-14 h-14 rounded-xl ${program.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
+                  <program.icon className="text-primary" size={26} />
+                </div>
+                <h3 className="font-serif text-xl font-semibold text-foreground mb-3">{program.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4 flex-grow">{program.description}</p>
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-primary group-hover:gap-2 transition-all mt-auto pt-2">
+                  Learn more <ArrowRight size={14} />
+                </span>
+              </Link>
             </motion.div>
           ))}
         </div>
@@ -84,7 +90,7 @@ export default function ProgramsSection() {
         >
           <Button variant="hero" size="lg" asChild>
             <Link to="/programs">
-              View All Programs <ArrowRight size={16} />
+              View All Services <ArrowRight size={16} />
             </Link>
           </Button>
         </motion.div>

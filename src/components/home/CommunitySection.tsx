@@ -4,27 +4,27 @@ import { Quote } from "lucide-react";
 
 const testimonials = [
   {
-    quote: "LIS Academy transformed my career. The research training program gave me the tools to publish in top journals.",
-    name: "Dr. Priya Sharma",
-    role: "Senior Librarian, Delhi University",
+    quote: "The conference history shows LIS Academy bringing together scholars, practitioners, public libraries, and higher education institutions around shared professional questions.",
+    name: "Conference Community",
+    role: "LIS Scholars and Practitioners",
   },
   {
-    quote: "The workshops are incredibly well-structured. I learned more in one week than in months of self-study.",
-    name: "Rajesh Kumar",
-    role: "Information Scientist, CSIR",
+    quote: "Its training and consultancy model is practical and institution-focused, which makes the academy relevant to libraries that need implementation support as much as theory.",
+    name: "Institutional Partners",
+    role: "Libraries and Colleges",
   },
   {
-    quote: "Being part of the LIS community has opened doors to collaborations I never imagined possible.",
-    name: "Anita Desai",
-    role: "Research Scholar, JNU",
+    quote: "The lecture series and workshops create a steady learning environment for professionals who want to keep growing after formal education.",
+    name: "Continuing Learners",
+    role: "Librarians and Researchers",
   },
 ];
 
 const communityGroups = [
-  { label: "Students", count: "2,000+" },
-  { label: "Librarians", count: "1,500+" },
-  { label: "Researchers", count: "800+" },
-  { label: "Academics", count: "500+" },
+  { label: "Libraries", count: "Academic" },
+  { label: "Librarians", count: "Professional" },
+  { label: "Researchers", count: "Scholarly" },
+  { label: "Institutions", count: "Collaborative" },
 ];
 
 export default function CommunitySection() {
@@ -44,14 +44,13 @@ export default function CommunitySection() {
             Our Community
           </span>
           <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-            Join a Thriving Ecosystem
+            Built for a Shared Professional Community
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Connect with professionals, researchers, and learners across the information science landscape.
+            LIS Academy serves students, librarians, faculty members, researchers, and institutions working across the Library and Information Science ecosystem.
           </p>
         </motion.div>
 
-        {/* Community stats */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -66,7 +65,6 @@ export default function CommunitySection() {
           ))}
         </motion.div>
 
-        {/* Testimonials */}
         <div className="grid md:grid-cols-3 gap-6">
           {testimonials.map((item, i) => (
             <motion.div
@@ -77,9 +75,7 @@ export default function CommunitySection() {
               className="p-6 rounded-xl bg-card border border-border hover-lift"
             >
               <Quote className="text-secondary/40 mb-4" size={28} />
-              <p className="text-foreground text-sm leading-relaxed mb-6 italic">
-                "{item.quote}"
-              </p>
+              <p className="text-foreground text-sm leading-relaxed mb-6 italic">"{item.quote}"</p>
               <div>
                 <div className="font-semibold text-foreground text-sm">{item.name}</div>
                 <div className="text-xs text-muted-foreground">{item.role}</div>

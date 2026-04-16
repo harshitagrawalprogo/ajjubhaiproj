@@ -1,0 +1,2 @@
+-- This project no longer uses Supabase for membership storage.
+-- Use neon_schema.sql to create the Neon/PostgreSQL schema instead.

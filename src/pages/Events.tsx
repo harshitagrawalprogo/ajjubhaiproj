@@ -1,17 +1,9 @@
 import { motion, useInView } from "framer-motion";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import PageLayout from "@/components/PageLayout";
 import PageHeader from "@/components/PageHeader";
 import { Calendar, MapPin, Clock, Users, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
-
-const events = [
-  { title: "National Conference on Digital Libraries 2026", date: "April 15–17, 2026", location: "New Delhi", type: "Conference", description: "India's premier conference on digital library technologies, open access, and information management.", speakers: ["Prof. A. Mehta", "Dr. S. Rao", "Dr. V. Singh"], agenda: ["Keynote Sessions", "Paper Presentations", "Panel Discussions", "Networking Dinner"] },
-  { title: "Workshop on AI in Information Retrieval", date: "May 8–9, 2026", location: "Bangalore", type: "Workshop", description: "Hands-on workshop exploring machine learning applications in search, cataloging, and recommendation systems.", speakers: ["Dr. V. Singh", "Guest: Prof. S. Mitra (IISc)"], agenda: ["Introduction to AI/ML", "NLP for Libraries", "Hands-on Lab", "Capstone Exercise"] },
-  { title: "Research Methodology Bootcamp", date: "June 1–5, 2026", location: "Online", type: "Training", description: "A 5-day intensive program covering qualitative, quantitative, and mixed-methods research design.", speakers: ["Dr. S. Rao", "Dr. P. Kumar"], agenda: ["Research Design", "Data Collection", "Statistical Analysis", "Academic Writing", "Publication Strategy"] },
-  { title: "Annual LIS Professionals Meet", date: "July 20, 2026", location: "Mumbai", type: "Networking", description: "A day-long gathering of LIS professionals for networking, knowledge sharing, and community building.", speakers: ["Industry Panels", "Alumni Speakers"], agenda: ["Opening Ceremony", "Industry Talks", "Speed Networking", "Awards Ceremony"] },
-  { title: "Digital Preservation Symposium", date: "August 12–13, 2026", location: "Chennai", type: "Symposium", description: "Exploring best practices in digital preservation, format migration, and heritage digitization.", speakers: ["Guest: Dr. K. Ramesh (British Library)", "Prof. A. Mehta"], agenda: ["Policy Frameworks", "Technical Standards", "Case Studies", "Group Workshop"] },
-  { title: "Information Literacy Summit", date: "September 25, 2026", location: "Hyderabad", type: "Summit", description: "National summit on integrating information literacy into higher education curricula.", speakers: ["UGC Representatives", "Faculty Panel"], agenda: ["Framework Presentation", "Best Practices", "Curriculum Design Workshop", "Policy Discussion"] },
-];
+import { fetchEvents, type EventItem } from "@/lib/eventsDb";
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -19,26 +11,40 @@ function FadeIn({ children, delay = 0, className = "" }: { children: React.React
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   return (
-    <motion.div ref={ref} initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6, delay }} className={className}>
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 30 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.6, delay }}
+      className={className}
+    >
       {children}
     </motion.div>
   );
 }
 
 export default function Events() {
+  const [events, setEvents] = useState<EventItem[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
   const [calMonth, setCalMonth] = useState(3);
 
+  useEffect(() => {
+    fetchEvents().then(setEvents);
+  }, []);
+
   return (
     <PageLayout>
-      <PageHeader tag="Events" title="Conferences & Workshops" description="Stay updated with our upcoming events, conferences, and professional development opportunities." />
+      <PageHeader
+        tag="Events"
+        title="Conferences, Lectures, and Institutional Sessions"
+        description="This page now reflects LIS Academy's published conference history and its recurring professional development formats."
+      />
 
-      {/* Mini Calendar */}
       <section className="section-padding" style={{ background: "#091529" }}>
         <div className="max-w-4xl mx-auto">
           <FadeIn>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-serif text-2xl font-bold text-white">2026 Calendar</h2>
+              <h2 className="font-serif text-2xl font-bold text-white">Activity Calendar</h2>
               <div className="flex gap-2 items-center">
                 <button
                   onClick={() => setCalMonth(Math.max(0, calMonth - 1))}
@@ -61,31 +67,32 @@ export default function Events() {
           <FadeIn delay={0.1}>
             <div className="space-y-3">
               {events.filter((e) => e.date.toLowerCase().includes(months[calMonth].toLowerCase())).length > 0 ? (
-                events.filter((e) => e.date.toLowerCase().includes(months[calMonth].toLowerCase())).map((event) => (
-                  <div key={event.title} className="p-4 rounded-lg border border-white/10 bg-white/5 flex items-center justify-between gap-3">
-                    <div>
-                      <span className="text-xs font-medium" style={{ color: "#c9a84c" }}>{event.type}</span>
-                      <h3 className="font-semibold text-white text-sm">{event.title}</h3>
-                      <p className="text-xs text-white/40">{event.date} · {event.location}</p>
+                events
+                  .filter((e) => e.date.toLowerCase().includes(months[calMonth].toLowerCase()))
+                  .map((event) => (
+                    <div key={event.title} className="p-4 rounded-lg border border-white/10 bg-white/5 flex items-center justify-between gap-3">
+                      <div>
+                        <span className="text-xs font-medium" style={{ color: "#c9a84c" }}>{event.type}</span>
+                        <h3 className="font-semibold text-white text-sm">{event.title}</h3>
+                        <p className="text-xs text-white/40">{event.date} � {event.location}</p>
+                      </div>
+                      <button className="shrink-0 text-xs px-3 py-1.5 rounded-lg border border-white/15 text-white/60 hover:text-white hover:border-white/30 transition-all">Details</button>
                     </div>
-                    <button className="shrink-0 text-xs px-3 py-1.5 rounded-lg border border-white/15 text-white/60 hover:text-white hover:border-white/30 transition-all">Details</button>
-                  </div>
-                ))
+                  ))
               ) : (
-                <p className="text-center text-white/40 py-6 text-sm">No events scheduled in {months[calMonth]}.</p>
+                <p className="text-center text-white/40 py-6 text-sm">No mapped items for {months[calMonth]}. Conference history and recurring formats are listed below.</p>
               )}
             </div>
           </FadeIn>
         </div>
       </section>
 
-      {/* All Events */}
       <section className="section-padding bg-[#0d1b3e]">
         <div className="max-w-6xl mx-auto">
           <FadeIn>
             <div className="mb-10">
               <span className="text-sm font-semibold tracking-widest uppercase mb-3 block" style={{ color: "#c9a84c" }}>All Events</span>
-              <h2 className="font-serif text-3xl md:text-4xl font-bold text-white">Upcoming Schedule</h2>
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-white">Conference History and Recurring Formats</h2>
             </div>
           </FadeIn>
 
@@ -134,14 +141,14 @@ export default function Events() {
                           </h4>
                           <ul className="space-y-2">
                             {event.speakers.map((s) => (
-                              <li key={s} className="text-sm text-white/55">• {s}</li>
+                              <li key={s} className="text-sm text-white/55">� {s}</li>
                             ))}
                           </ul>
                           <button
                             className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-[#0d1b3e] hover:-translate-y-0.5 transition-all"
                             style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)" }}
                           >
-                            Register Now <ArrowRight size={14} />
+                            Contact for Updates <ArrowRight size={14} />
                           </button>
                         </div>
                       </div>

@@ -5,28 +5,28 @@ import { Button } from "@/components/ui/button";
 
 const events = [
   {
-    title: "LISACON-2024: Intelligent Libraries",
-    date: "Oct 17–19, 2024",
-    location: "Bharathidasan University, Tiruchirappalli",
+    title: "1st LIS Academy Conference",
+    date: "December 21-23, 2017",
+    location: "Gandhi Bhavan, Kumara Park",
     tag: "Conference",
   },
   {
-    title: "Monthly Lecture Series on LIS Topics",
-    date: "Every Month (Ongoing)",
-    location: "Online (Webinar)",
+    title: "2nd LIS Academy Conference on Innovations in Libraries",
+    date: "June 6-8, 2019",
+    location: "Visvesvaraya Technological University, Belagavi",
+    tag: "Conference",
+  },
+  {
+    title: "LISA Distinguished Lecture Series",
+    date: "Launched November 14, 2020",
+    location: "Online and blended academic forums",
     tag: "Lecture Series",
   },
   {
-    title: "Koha Library Automation Training",
-    date: "Rolling Admissions",
-    location: "Bengaluru & Online",
-    tag: "Training",
-  },
-  {
-    title: "NAAC/NBA/NIRF Accreditation Workshop",
-    date: "Quarterly",
-    location: "Pan-India / Online",
-    tag: "Workshop",
+    title: "Institutional Workshops and Seminars",
+    date: "Year-round",
+    location: "Higher education institutions across India",
+    tag: "Professional Development",
   },
 ];
 
@@ -45,10 +45,10 @@ export default function EventsSection() {
         >
           <div>
             <span className="text-secondary text-sm font-semibold tracking-widest uppercase mb-3 block">
-              Upcoming Events
+              Events and Forums
             </span>
             <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
-              What's Happening
+              Conferences and Academic Platforms
             </h2>
           </div>
           <Button variant="heroOutline" size="sm" asChild>
@@ -82,7 +82,7 @@ export default function EventsSection() {
                 </div>
               </div>
               <Button variant="link" className="mt-4 p-0 h-auto text-primary">
-                Register <ArrowRight size={14} />
+                Explore <ArrowRight size={14} />
               </Button>
             </motion.div>
           ))}

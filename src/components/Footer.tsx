@@ -9,15 +9,15 @@ const footerLinks = {
     { name: "Events", path: "/events" },
   ],
   Resources: [
-    { name: "Knowledge Hub", path: "/knowledge" },
+    { name: "Products", path: "/library-automation" },
     { name: "Community", path: "/community" },
-    { name: "Blog", path: "/knowledge" },
+    { name: "Knowledge Hub", path: "/knowledge" },
     { name: "Publications", path: "/research" },
   ],
   Connect: [
     { name: "Contact Us", path: "/contact" },
     { name: "Newsletter", path: "/contact" },
-    { name: "Careers", path: "/about" },
+    { name: "Membership", path: "/membership" },
     { name: "Partners", path: "/about" },
   ],
 };
@@ -27,21 +27,18 @@ export default function Footer() {
     <footer className="bg-gradient-navy text-primary-foreground">
       <div className="max-w-7xl mx-auto section-padding">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-          {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center">
-                <span className="text-secondary-foreground font-serif font-bold text-lg">L</span>
-              </div>
+              <img src="/logo.png" alt="LIS Academy Logo" className="h-10 w-auto object-contain" />
               <span className="font-serif font-bold text-xl">LIS Academy</span>
             </div>
             <p className="text-primary-foreground/70 text-sm leading-relaxed mb-6">
-              A professional Public Charitable Trust advancing the Library &amp; Information Science profession through technology, training, and research.
+              A professional Public Charitable Trust advancing the Library and Information Science profession through technology, training, and research support.
             </p>
             <div className="space-y-3 text-sm text-primary-foreground/70">
               <div className="flex items-start gap-2">
                 <MapPin size={14} className="mt-0.5 shrink-0" />
-                <span>7/29, Vijayalakshmi Complex, 1st Main Road, Gokul, Bengaluru – 560054</span>
+                <span>7/29, Vijayalakshmi Complex, 1st Main Road, 1st Phase, 2nd Stage, Gokul, Bengaluru - 560054</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail size={14} />
@@ -54,17 +51,13 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Links */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
               <h4 className="font-serif text-lg mb-4">{title}</h4>
               <ul className="space-y-2.5">
                 {links.map((link) => (
                   <li key={link.name}>
-                    <Link
-                      to={link.path}
-                      className="text-sm text-primary-foreground/60 hover:text-primary-foreground transition-colors"
-                    >
+                    <Link to={link.path} className="text-sm text-primary-foreground/60 hover:text-primary-foreground transition-colors">
                       {link.name}
                     </Link>
                   </li>
@@ -75,9 +68,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-primary-foreground/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-primary-foreground/50">
-            © {new Date().getFullYear()} LIS Academy. All rights reserved.
-          </p>
+          <p className="text-sm text-primary-foreground/50">� {new Date().getFullYear()} LIS Academy. All rights reserved.</p>
           <div className="flex gap-6">
             {["Privacy Policy", "Terms of Service", "Sitemap"].map((item) => (
               <a key={item} href="#" className="text-xs text-primary-foreground/40 hover:text-primary-foreground/70 transition-colors">

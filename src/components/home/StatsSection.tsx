@@ -2,10 +2,10 @@ import { motion, useInView } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 
 const stats = [
-  { value: 100, suffix: "+", label: "Professional Programs Conducted" },
-  { value: 3700, suffix: "+", label: "Hours of YouTube Content" },
-  { value: 30, suffix: "+", label: "Institutes on IRINS" },
-  { value: 27, suffix: "+", label: "Libraries Automated (Koha)" },
+  { value: 4, suffix: "+", label: "Major Service Verticals" },
+  { value: 3, suffix: "", label: "Core Promises: Learn, Inspire, Serve" },
+  { value: 2, suffix: "+", label: "Published Conference Milestones" },
+  { value: 100, suffix: "%", label: "Focused on LIS Profession Development" },
 ];
 
 function AnimatedCounter({ target, suffix, inView }: { target: number; suffix: string; inView: boolean }) {
@@ -30,7 +30,8 @@ function AnimatedCounter({ target, suffix, inView }: { target: number; suffix: s
 
   return (
     <span className="tabular-nums">
-      {count.toLocaleString()}{suffix}
+      {count.toLocaleString()}
+      {suffix}
     </span>
   );
 }
@@ -52,7 +53,7 @@ export default function StatsSection() {
             Our Impact
           </span>
           <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-primary-foreground">
-            Numbers That Speak
+            What LIS Academy Focuses On
           </h2>
         </motion.div>
 

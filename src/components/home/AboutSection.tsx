@@ -8,9 +8,21 @@ export default function AboutSection() {
   const inView = useInView(ref, { once: true, margin: "-100px" });
 
   const values = [
-    { icon: Target, title: "Mission", text: "To bridge the gap between LIS education and the profession and assist libraries with modern technology through training, research, and consultancy." },
-    { icon: Eye, title: "Vision", text: "To be the foremost destination for LIS professionals to acquire cutting-edge skills and provide best-in-class technology-based solutions." },
-    { icon: Lightbulb, title: "Purpose", text: "Established as a Public Charitable Trust to work for the development of the Library & Information Science profession through education, literature, and research." },
+    {
+      icon: Target,
+      title: "Mission",
+      text: "To spread the multidimensional utility and overall growth of librarianship through education, literature, research, publications, training, consultation, and collaboration.",
+    },
+    {
+      icon: Eye,
+      title: "Vision",
+      text: "To become an active and dynamic professional body supporting librarians with essential knowledge, skills, values, and innovative technology.",
+    },
+    {
+      icon: Lightbulb,
+      title: "Purpose",
+      text: "To provide need-based services to libraries across the country and help bridge the gap between LIS education and professional practice.",
+    },
   ];
 
   return (
@@ -26,24 +38,23 @@ export default function AboutSection() {
               About LIS Academy
             </span>
             <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6 leading-tight">
-              Shaping the Future of Information Science
+              A Professional Platform for Libraries, Librarians, and Research Communities
             </h2>
             <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-              LIS Academy is a professional Public Charitable Trust established to advance the Library &amp; Information Science profession.
-              We specialize in library automation, digital repositories, research information systems, and accreditation support — bridging the gap between LIS education and modern technology.
+              LIS Academy works for the development of the Library and Information Science profession and assists libraries with state-of-the-art technology as well as continuous skill development for librarians. Its public-facing work includes training, consultancy, publications, seminars, workshops, and research productivity support for higher education institutions.
             </p>
-            <div className="flex gap-8">
+            <div className="flex gap-8 flex-wrap">
               <div>
-                <div className="text-3xl font-serif font-bold text-foreground">100+</div>
-                <div className="text-sm text-muted-foreground">Programs Conducted</div>
+                <div className="text-3xl font-serif font-bold text-foreground">Need-Based</div>
+                <div className="text-sm text-muted-foreground">Services for Libraries</div>
               </div>
               <div>
-                <div className="text-3xl font-serif font-bold text-foreground">30+</div>
-                <div className="text-sm text-muted-foreground">IRINS Institutes</div>
+                <div className="text-3xl font-serif font-bold text-foreground">Pan-India</div>
+                <div className="text-sm text-muted-foreground">Training and Consultancy Reach</div>
               </div>
               <div>
-                <div className="text-3xl font-serif font-bold text-foreground">Pan India</div>
-                <div className="text-sm text-muted-foreground">Reach &amp; Impact</div>
+                <div className="text-3xl font-serif font-bold text-foreground">Learn Inspire Serve</div>
+                <div className="text-sm text-muted-foreground">Core Identity and Practice</div>
               </div>
             </div>
           </motion.div>

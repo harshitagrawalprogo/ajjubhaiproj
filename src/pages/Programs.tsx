@@ -7,39 +7,39 @@ import { GraduationCap, FlaskConical, Wrench, Award, Clock, Users, CheckCircle, 
 const programs = [
   {
     icon: GraduationCap,
-    title: "Finishing School",
-    duration: "3 Months",
-    mode: "Hybrid",
-    description: "A comprehensive professional development program for fresh LIS graduates to become industry-ready.",
-    highlights: ["Practical library management", "Digital tools mastery", "Soft skills development", "Industry mentorship", "Placement assistance"],
-    curriculum: ["Library Automation Systems", "Digital Repository Management", "Information Literacy", "User Experience Design", "Professional Communication"],
+    title: "Training and Skill Development",
+    duration: "Need-based",
+    mode: "Online / On-site",
+    description: "LIS Academy supports librarians through continuous skill development programs, practical workshops, and professional learning opportunities.",
+    highlights: ["Continuing education support", "Professional upskilling", "Seminars and workshops", "LIS-focused learning", "Application-oriented delivery"],
+    curriculum: ["Emerging tools in librarianship", "Professional values and best practices", "Service innovation", "Academic support workflows", "Technology-enabled library work"],
   },
   {
     icon: FlaskConical,
-    title: "Research Training Program",
-    duration: "6 Months",
-    mode: "Online + Residency",
-    description: "Master research methodologies and publish in peer-reviewed journals with expert guidance.",
-    highlights: ["Quantitative & qualitative methods", "Data analysis with SPSS/R", "Academic writing workshop", "Publication support", "Conference presentation prep"],
-    curriculum: ["Research Design & Philosophy", "Literature Review Techniques", "Statistical Analysis", "Scientific Writing", "Ethics in Research"],
+    title: "Research Productivity Workshops",
+    duration: "Workshop format",
+    mode: "Institutional engagement",
+    description: "The academy works with teachers and research scholars to improve research output, publication quality, and scholarly visibility.",
+    highlights: ["Publication-oriented guidance", "Seminars for teachers", "Research scholar support", "Visibility and productivity focus", "Institutional outcomes"],
+    curriculum: ["Research ecosystem orientation", "Publication support", "Scholarly profiling", "Visibility improvement strategies", "Academic impact practices"],
   },
   {
     icon: Wrench,
-    title: "Professional Workshops",
-    duration: "1–5 Days",
-    mode: "In-Person / Online",
-    description: "Intensive, hands-on workshops on cutting-edge topics in library and information science.",
-    highlights: ["AI in Libraries", "Open Access & OER", "Metadata & Cataloging", "Digital Preservation", "Library Marketing"],
-    curriculum: ["Emerging Technology Trends", "Practical Tool Training", "Case Study Analysis", "Group Projects", "Expert Panel Sessions"],
+    title: "Technology Implementation Services",
+    duration: "Project-based",
+    mode: "Consultancy + deployment",
+    description: "LIS Academy assists libraries with technology adoption through automation, repository setup, and research information services.",
+    highlights: ["Koha library automation", "DSpace repository support", "EPrints implementation", "IRINS and research systems", "Need-based consultation"],
+    curriculum: ["Planning and migration", "Workflow setup", "Metadata and system organization", "User orientation", "Sustainable deployment practices"],
   },
   {
     icon: Award,
-    title: "Certification Courses",
-    duration: "2–4 Months",
-    mode: "Online Self-paced",
-    description: "Industry-recognized certifications to advance your career in information management.",
-    highlights: ["Flexible online learning", "Industry-recognized certificates", "Expert-led modules", "Capstone projects", "Lifetime resource access"],
-    curriculum: ["Information Architecture", "Knowledge Management", "Digital Curation", "Records Management", "Information Security Basics"],
+    title: "Accreditation and Ranking Consultancy",
+    duration: "Cycle-based",
+    mode: "Institutional consultancy",
+    description: "The academy helps institutions prepare for quality and ranking frameworks with focused support for library and research-related requirements.",
+    highlights: ["NBA support", "NAAC preparation", "NIRF-oriented guidance", "Documentation support", "Strategic improvement inputs"],
+    curriculum: ["Assessment preparedness", "Library evidence and reporting", "Research visibility inputs", "Institutional documentation", "Improvement planning"],
   },
 ];
 
@@ -47,7 +47,13 @@ function FadeIn({ children, delay = 0, className = "" }: { children: React.React
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   return (
-    <motion.div ref={ref} initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6, delay }} className={className}>
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 30 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.6, delay }}
+      className={className}
+    >
       {children}
     </motion.div>
   );
@@ -56,14 +62,17 @@ function FadeIn({ children, delay = 0, className = "" }: { children: React.React
 export default function Programs() {
   return (
     <PageLayout>
-      <PageHeader tag="Programs" title="Your Learning Journey" description="Explore our carefully designed programs that blend academic rigor with real-world application." />
+      <PageHeader
+        tag="Programs"
+        title="Services and Professional Support"
+        description="A structured overview of LIS Academy's public-facing service areas and institutional support model."
+      />
 
       <section className="section-padding bg-[#0d1b3e]">
         <div className="max-w-6xl mx-auto space-y-20">
           {programs.map((program, i) => (
             <FadeIn key={program.title}>
               <div className={`grid lg:grid-cols-2 gap-10 items-start ${i % 2 !== 0 ? "lg:direction-rtl" : ""}`}>
-                {/* Info */}
                 <div className={i % 2 !== 0 ? "lg:order-2" : ""}>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(201,168,76,0.15)" }}>
@@ -96,14 +105,13 @@ export default function Programs() {
                     className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-[#0d1b3e] hover:-translate-y-0.5 transition-all duration-300 shadow-lg shadow-[#c9a84c]/20"
                     style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)" }}
                   >
-                    Register Now <ArrowRight size={14} />
+                    Contact for Details <ArrowRight size={14} />
                   </a>
                 </div>
 
-                {/* Curriculum */}
                 <div className={i % 2 !== 0 ? "lg:order-1" : ""}>
                   <div className="p-8 rounded-2xl border border-white/10 bg-white/5">
-                    <h4 className="font-serif text-lg font-semibold text-white mb-5">Curriculum Overview</h4>
+                    <h4 className="font-serif text-lg font-semibold text-white mb-5">Focus Areas</h4>
                     <div className="space-y-4">
                       {program.curriculum.map((module, idx) => (
                         <div key={module} className="flex items-center gap-3">

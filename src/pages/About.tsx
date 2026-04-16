@@ -5,61 +5,133 @@ import PageHeader from "@/components/PageHeader";
 import { Target, Eye, Lightbulb, Users, Award, BookOpen, Globe, Heart } from "lucide-react";
 
 const timeline = [
-  { year: "2008", title: "Foundation", text: "LIS Academy was established with a vision to transform library science education in India." },
-  { year: "2012", title: "First National Conference", text: "Hosted the inaugural National Conference on Digital Libraries with 500+ attendees." },
-  { year: "2016", title: "Research Wing", text: "Launched a dedicated research wing focusing on information retrieval and knowledge management." },
-  { year: "2020", title: "Digital Transformation", text: "Pivoted to hybrid learning, reaching 10,000+ learners across the country." },
-  { year: "2024", title: "Global Recognition", text: "Recognized by IFLA as a leading LIS training institution in South Asia." },
+  {
+    year: "Foundation",
+    title: "Public Charitable Trust",
+    text: "LIS Academy was formed to work for the development of the Library and Information Science profession and provide need-based services to libraries across the country.",
+  },
+  {
+    year: "2017",
+    title: "1st LIS Academy Conference",
+    text: "The inaugural conference was hosted with public library and scientometrics partners around information access and the public role of libraries.",
+  },
+  {
+    year: "2019",
+    title: "Innovations in Libraries",
+    text: "The 2nd LIS Academy Conference at Visvesvaraya Technological University, Belagavi, brought researchers and practitioners together around technology-enabled innovation in libraries.",
+  },
+  {
+    year: "2020",
+    title: "Lecture Series Launch",
+    text: "The LISA Distinguished Lecture Series began as a recurring forum for leading voices in librarianship, research, management, and emerging technology.",
+  },
+  {
+    year: "Today",
+    title: "Institutional Support",
+    text: "The academy continues to support higher education institutions through workshops, research productivity programs, library technology implementation, and accreditation consultancy.",
+  },
 ];
 
 const leaders = [
-  { name: "Prof. Anil Mehta", role: "Founder & Director", bio: "30+ years in library science. Former Head, Dept. of LIS, Delhi University." },
-  { name: "Dr. Sunita Rao", role: "Academic Dean", bio: "Expert in digital curation and open access. Published 60+ research papers." },
-  { name: "Dr. Vikram Singh", role: "Research Director", bio: "Specialist in AI-driven information retrieval and bibliometrics." },
-  { name: "Ms. Kavita Joshi", role: "Head of Programs", bio: "Designed 25+ professional development programs for LIS professionals." },
+  {
+    name: "Library Professionals",
+    role: "Primary Community",
+    bio: "Continuous skill development, training, and professional support for librarians across sectors.",
+  },
+  {
+    name: "Higher Education Institutions",
+    role: "Institutional Partners",
+    bio: "Workshops, seminars, and consultancy to improve research productivity and academic visibility.",
+  },
+  {
+    name: "Research Scholars",
+    role: "Academic Beneficiaries",
+    bio: "Guidance through seminars and scholarly development activities linked to research and publication quality.",
+  },
+  {
+    name: "Libraries",
+    role: "Technology Partners",
+    bio: "Implementation-oriented support for automation, repositories, and research information systems.",
+  },
 ];
 
 const advisors = [
-  "Prof. R.K. Sharma – IGNOU",
-  "Dr. P. Nagabhushanam – INFLIBNET",
-  "Prof. M. Krishnamurthy – ISI Bangalore",
-  "Dr. S. Srinivasan – IIT Madras",
-  "Prof. N. Laxman Rao – Osmania University",
-  "Dr. A.R. Jha – NIT Rourkela",
+  "Library automation and modernization",
+  "Digital repositories and open-source platforms",
+  "Research visibility and publication productivity",
+  "Consultancy for NBA, NAAC, and NIRF",
+  "Training, seminars, workshops, and collaboration",
+  "Best and fair professional practices in LIS",
 ];
 
 const values = [
-  { icon: BookOpen, title: "Academic Excellence", text: "Rigorous curriculum designed by leading scholars and practitioners." },
-  { icon: Globe, title: "Global Perspective", text: "International collaborations bringing world-class knowledge to India." },
-  { icon: Users, title: "Community First", text: "Building a supportive ecosystem for all information professionals." },
-  { icon: Heart, title: "Inclusive Access", text: "Making quality LIS education accessible to all, regardless of background." },
+  {
+    icon: BookOpen,
+    title: "Professional Growth",
+    text: "Programs and services designed to strengthen the knowledge, skills, and values of librarianship.",
+  },
+  {
+    icon: Globe,
+    title: "Need-Based Services",
+    text: "Support tailored to different kinds of libraries and institutional contexts across the country.",
+  },
+  {
+    icon: Users,
+    title: "Collaboration",
+    text: "A working model built on workshops, consultation, partnerships, and professional exchange.",
+  },
+  {
+    icon: Heart,
+    title: "Fair Practice",
+    text: "An emphasis on responsible, best-practice-oriented use of technology and professional standards.",
+  },
 ];
 
 function FadeIn({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   return (
-    <motion.div ref={ref} initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6, delay }} className={className}>
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 30 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.6, delay }}
+      className={className}
+    >
       {children}
     </motion.div>
   );
 }
 
 const sectionDark = "section-padding bg-[#0d1b3e]";
-const sectionDarker = "section-padding" ;
 
 export default function About() {
   return (
     <PageLayout>
-      <PageHeader tag="About Us" title="Our Story & Mission" description="Building the future of Library & Information Science in India since 2008." />
+      <PageHeader
+        tag="About Us"
+        title="Our Story and Purpose"
+        description="Official LIS Academy messaging adapted from the academy's public About and conference pages."
+      />
 
-      {/* Mission, Vision, Purpose */}
       <section className={sectionDark}>
         <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {[
-            { icon: Target, title: "Mission", text: "To advance Library & Information Science through world-class training, impactful research, and a vibrant professional community." },
-            { icon: Eye, title: "Vision", text: "To be the foremost institution shaping the future of information professionals globally." },
-            { icon: Lightbulb, title: "Purpose", text: "To bridge the gap between traditional library science and modern information technology, empowering professionals for the digital age." },
+            {
+              icon: Target,
+              title: "Mission",
+              text: "To spread the multidimensional utility and overall growth of librarianship through education, literature, research, publications, training, consultation, and collaboration.",
+            },
+            {
+              icon: Eye,
+              title: "Vision",
+              text: "To become the best, active, and dynamic professional body by supporting LIS professionals with essential knowledge, skills, values, and innovative technology.",
+            },
+            {
+              icon: Lightbulb,
+              title: "Purpose",
+              text: "To bridge LIS education and professional practice while helping libraries adopt state-of-the-art technology and better services.",
+            },
           ].map((item, i) => (
             <FadeIn key={item.title} delay={i * 0.1}>
               <div className="p-8 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 h-full">
@@ -74,7 +146,6 @@ export default function About() {
         </div>
       </section>
 
-      {/* Values */}
       <section className="section-padding" style={{ background: "#091529" }}>
         <div className="max-w-7xl mx-auto">
           <FadeIn>
@@ -99,13 +170,12 @@ export default function About() {
         </div>
       </section>
 
-      {/* Timeline */}
       <section className={sectionDark}>
         <div className="max-w-3xl mx-auto">
           <FadeIn>
             <div className="text-center mb-14">
               <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase border border-[#c9a84c]/40 text-[#c9a84c] bg-[#c9a84c]/10 mb-4">Our Journey</span>
-              <h2 className="font-serif text-3xl md:text-4xl font-bold text-white">History & Milestones</h2>
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-white">History and Milestones</h2>
             </div>
           </FadeIn>
           <div className="relative">
@@ -127,13 +197,12 @@ export default function About() {
         </div>
       </section>
 
-      {/* Leadership */}
       <section className="section-padding" style={{ background: "#091529" }}>
         <div className="max-w-7xl mx-auto">
           <FadeIn>
             <div className="text-center mb-14">
               <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase border border-[#c9a84c]/40 text-[#c9a84c] bg-[#c9a84c]/10 mb-4">Leadership</span>
-              <h2 className="font-serif text-3xl md:text-4xl font-bold text-white">Meet Our Team</h2>
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-white">Who LIS Academy Serves</h2>
             </div>
           </FadeIn>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -153,13 +222,12 @@ export default function About() {
         </div>
       </section>
 
-      {/* Advisory Board */}
       <section className={sectionDark}>
         <div className="max-w-4xl mx-auto">
           <FadeIn>
             <div className="text-center mb-10">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase border border-[#c9a84c]/40 text-[#c9a84c] bg-[#c9a84c]/10 mb-4">Advisory Board</span>
-              <h2 className="font-serif text-3xl md:text-4xl font-bold text-white">Guided by Experts</h2>
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase border border-[#c9a84c]/40 text-[#c9a84c] bg-[#c9a84c]/10 mb-4">Core Work Areas</span>
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-white">How the Academy Contributes</h2>
             </div>
           </FadeIn>
           <FadeIn delay={0.2}>

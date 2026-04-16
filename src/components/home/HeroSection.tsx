@@ -1,14 +1,14 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BookOpen, GraduationCap, Library, Youtube } from "lucide-react";
+import { ArrowRight, BookOpen, GraduationCap, MicVocal, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const floatingCards = [
-  { icon: BookOpen, label: "100+ Programs Conducted", delay: 0 },
-  { icon: GraduationCap, label: "3700+ Hours on YouTube", delay: 0.2 },
-  { icon: Library, label: "30+ IRINS Institutes", delay: 0.4 },
-  { icon: Youtube, label: "Pan-India Reach", delay: 0.6 },
+  { icon: BookOpen, label: "Training, Publications and Research", delay: 0 },
+  { icon: GraduationCap, label: "Skill Development for LIS Professionals", delay: 0.2 },
+  { icon: Wrench, label: "Koha, DSpace, EPrints and IRINS Support", delay: 0.4 },
+  { icon: MicVocal, label: "National Conferences and Lecture Series", delay: 0.6 },
 ];
 
 export default function HeroSection() {
@@ -22,7 +22,9 @@ export default function HeroSection() {
 
   useEffect(() => {
     startHideTimer();
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   const handleMouseEnter = () => {
@@ -40,7 +42,6 @@ export default function HeroSection() {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Video background */}
       <video
         autoPlay
         loop
@@ -52,7 +53,6 @@ export default function HeroSection() {
         <source src="/banner-video-1-1.mp4" type="video/mp4" />
       </video>
 
-      {/* Dark overlay to make text readable */}
       <div
         className="absolute inset-0"
         style={{
@@ -61,7 +61,6 @@ export default function HeroSection() {
         }}
       />
 
-      {/* Additional subtle gold gradient overlay */}
       <div
         className="absolute inset-0"
         style={{
@@ -70,7 +69,6 @@ export default function HeroSection() {
         }}
       />
 
-      {/* Content – fades out after 5.5s, returns on hover */}
       <AnimatePresence>
         {contentVisible && (
           <motion.div
@@ -81,7 +79,6 @@ export default function HeroSection() {
             className="relative max-w-6xl mx-auto px-6 pt-24 pb-12 flex flex-col items-center text-center"
             style={{ zIndex: 3 }}
           >
-            {/* Top badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -90,38 +87,35 @@ export default function HeroSection() {
             >
               <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold tracking-widest uppercase border border-[#c9a84c]/40 text-[#c9a84c] bg-[#c9a84c]/10 backdrop-blur-sm">
                 <BookOpen size={13} />
-                India's Premier Library &amp; Information Science Platform
+                Learn Inspire Serve
               </span>
             </motion.div>
 
-            {/* Main heading */}
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.85, delay: 0.2 }}
               className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.05] tracking-tight mb-6"
             >
-              <span className="text-white">Learn. Inspire. </span>
+              <span className="text-white">Advancing Library </span>
               <br />
               <span
                 className="bg-clip-text text-transparent"
                 style={{ backgroundImage: "linear-gradient(135deg, #f0d080 0%, #c9a84c 50%, #e8b84b 100%)" }}
               >
-                Serve.
+                and Information Science
               </span>
             </motion.h1>
 
-            {/* Subtitle */}
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.45 }}
-              className="text-white/70 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
+              className="text-white/70 text-lg md:text-xl max-w-3xl mx-auto mb-10 leading-relaxed"
             >
-              A professional Public Charitable Trust advancing the Library &amp; Information Science profession through world-class training, technology implementation, and research across India.
+              LIS Academy is a professional Public Charitable Trust that supports libraries and librarians through continuous skill development, technology services, research support, and national professional forums.
             </motion.p>
 
-            {/* CTA buttons */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -135,7 +129,7 @@ export default function HeroSection() {
                 style={{ background: "linear-gradient(135deg, #f0d080 0%, #c9a84c 100%)" }}
               >
                 <Link to="/programs">
-                  Explore Programs
+                  Explore Services
                   <ArrowRight size={18} className="ml-2" />
                 </Link>
               </Button>
@@ -144,12 +138,11 @@ export default function HeroSection() {
                 size="lg"
                 className="px-8 py-6 text-base font-semibold rounded-xl bg-white/10 border border-white/25 text-white backdrop-blur-sm hover:bg-white/20 hover:border-white/40 transition-all duration-300 hover:-translate-y-0.5"
               >
-                <Link to="/contact">Contact Us</Link>
+                <Link to="/events">View Conferences</Link>
               </Button>
             </motion.div>
 
-            {/* Floating stat cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-3xl">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-4xl">
               {floatingCards.map(({ icon: Icon, label, delay }) => (
                 <motion.div
                   key={label}
@@ -173,7 +166,6 @@ export default function HeroSection() {
         )}
       </AnimatePresence>
 
-      {/* Hover hint – shown when content is hidden */}
       <AnimatePresence>
         {!contentVisible && (
           <motion.div
@@ -193,7 +185,6 @@ export default function HeroSection() {
           </motion.div>
         )}
       </AnimatePresence>
-
     </section>
   );
 }
