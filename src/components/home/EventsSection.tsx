@@ -1,9 +1,10 @@
 import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Calendar, MapPin, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { fetchEvents, type EventItem } from "@/lib/eventsDb";
 
-const events = [
+const fallbackEvents = [
   {
     title: "1st LIS Academy Conference",
     date: "December 21-23, 2017",
@@ -33,6 +34,14 @@ const events = [
 export default function EventsSection() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
+  const [events, setEvents] = useState<EventItem[]>(fallbackEvents as EventItem[]);
+
+  useEffect(() => {
+    fetchEvents().then((data) => {
+      const featured = data.filter((event) => event.is_featured).slice(0, 4);
+      setEvents(featured.length ? featured : data.slice(0, 4));
+    });
+  }, []);
 
   return (
     <section ref={ref} className="section-padding bg-background">
@@ -66,7 +75,7 @@ export default function EventsSection() {
               className="group p-6 rounded-xl bg-card border border-border hover-lift"
             >
               <span className="inline-block px-3 py-1 rounded-full bg-accent text-accent-foreground text-xs font-medium mb-4">
-                {event.tag}
+                {event.type || (event as any).tag}
               </span>
               <h3 className="font-serif text-lg font-semibold text-foreground mb-4 leading-snug">
                 {event.title}

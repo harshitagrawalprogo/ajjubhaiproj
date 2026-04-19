@@ -1,4 +1,4 @@
-const EVENTS_KEY = "lisacademy_events_v2";
+import { apiRequest, getAdminToken } from "./api";
 
 export interface EventItem {
   id: string;
@@ -9,6 +9,12 @@ export interface EventItem {
   description: string;
   speakers: string[];
   agenda: string[];
+  image_url?: string;
+  registration_url?: string;
+  is_featured?: boolean;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 const defaultEvents: EventItem[] = [
@@ -21,6 +27,8 @@ const defaultEvents: EventItem[] = [
     description: "The inaugural LIS Academy conference was organized with public library and scientometrics partners around the larger idea of information for all and the public role of libraries.",
     speakers: ["Department of Public Libraries", "Raja Rammohun Roy Library Foundation", "Institute of Scientometrics"],
     agenda: ["Inaugural conference sessions", "Public library themes", "Infographics and scientometrics discussions", "Technical presentations"],
+    is_featured: true,
+    sort_order: 10,
   },
   {
     id: "evt-2",
@@ -31,6 +39,8 @@ const defaultEvents: EventItem[] = [
     description: "This edition focused on how innovation and emerging technologies are reshaping libraries, information access, LIS education, and service delivery.",
     speakers: ["Prof. Kavi Mahesh", "Dr. S. M. Pujar", "Dr. Buddhi Prakash Chauhan", "Delegates from India and Bangladesh"],
     agenda: ["Conference theme sessions", "Library technology trends", "Innovations in library technologies", "Technology-based library services"],
+    is_featured: true,
+    sort_order: 20,
   },
   {
     id: "evt-3",
@@ -41,74 +51,38 @@ const defaultEvents: EventItem[] = [
     description: "A recurring lecture forum created to expose LIS professionals to contemporary trends, leadership perspectives, and emerging technologies in librarianship.",
     speakers: ["Prof. P. Balaram", "Invited academic and research leaders"],
     agenda: ["Distinguished keynote lecture", "Contemporary LIS issues", "Leadership and management perspectives", "Best-practice sharing"],
-  },
-  {
-    id: "evt-4",
-    title: "Research Productivity Workshops",
-    date: "Conducted year-round",
-    location: "Higher education institutions across India",
-    type: "Workshop",
-    description: "Workshops and seminars aimed at teachers and research scholars to improve research and publication productivity.",
-    speakers: ["Institutional faculty groups", "Research scholars", "LIS Academy resource persons"],
-    agenda: ["Research visibility sessions", "Publication productivity support", "Seminar discussions", "Institutional consultation"],
-  },
-  {
-    id: "evt-5",
-    title: "Accreditation and Ranking Support Sessions",
-    date: "Scheduled with partner institutions",
-    location: "On-site and consultative",
-    type: "Consultancy",
-    description: "Focused support for institutions preparing for NBA, NAAC, and NIRF with special attention to library and research performance areas.",
-    speakers: ["Institutional quality teams", "LIS Academy consultants"],
-    agenda: ["Readiness review", "Documentation support", "Metric interpretation", "Improvement planning"],
-  },
-  {
-    id: "evt-6",
-    title: "Library Technology Implementation Clinics",
-    date: "By project requirement",
-    location: "Partner libraries",
-    type: "Implementation",
-    description: "Practical sessions around Koha, DSpace, EPrints, IRINS, and related system adoption in libraries and institutions.",
-    speakers: ["Implementation teams", "Library administrators"],
-    agenda: ["Requirement mapping", "Platform orientation", "Workflow setup", "Adoption and support planning"],
+    is_featured: true,
+    sort_order: 30,
   },
 ];
 
+function adminHeaders() {
+  const token = getAdminToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function fetchEvents(): Promise<EventItem[]> {
   try {
-    const raw = localStorage.getItem(EVENTS_KEY);
-    if (!raw) {
-      localStorage.setItem(EVENTS_KEY, JSON.stringify(defaultEvents));
-      return defaultEvents;
-    }
-    return JSON.parse(raw);
+    const response = await apiRequest<{ events: EventItem[] }>("/api/events");
+    return response.events;
   } catch {
     return defaultEvents;
   }
 }
 
 export async function saveEvent(event: Omit<EventItem, "id"> | EventItem): Promise<EventItem> {
-  const events = await fetchEvents();
-
-  if ("id" in event && event.id) {
-    const index = events.findIndex((e) => e.id === event.id);
-    if (index !== -1) {
-      events[index] = event as EventItem;
-    } else {
-      events.push(event as EventItem);
-    }
-    localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
-    return event as EventItem;
-  } else {
-    const newEvent: EventItem = { ...event, id: `evt-${Date.now()}` };
-    events.push(newEvent);
-    localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
-    return newEvent;
-  }
+  const hasPersistedId = "id" in event && Boolean(event.id) && !String(event.id).startsWith("evt-");
+  const response = await apiRequest<{ event: EventItem }>(hasPersistedId ? `/api/admin/events/${event.id}` : "/api/admin/events", {
+    method: hasPersistedId ? "PUT" : "POST",
+    headers: adminHeaders(),
+    body: JSON.stringify(event),
+  });
+  return response.event;
 }
 
 export async function deleteEvent(id: string): Promise<void> {
-  const events = await fetchEvents();
-  const filtered = events.filter((e) => e.id !== id);
-  localStorage.setItem(EVENTS_KEY, JSON.stringify(filtered));
+  await apiRequest<void>(`/api/admin/events/${id}`, {
+    method: "DELETE",
+    headers: adminHeaders(),
+  });
 }

@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Facebook, Twitter, Linkedin, Youtube, Instagram } from "lucide-react";
-import { getContent } from "@/lib/contentDb";
+import { getDefaultSection, getSection } from "@/lib/contentDb";
 
 interface TopBarProps {
   onHeightChange: (height: number) => void;
@@ -17,17 +17,15 @@ const SOCIAL_ICONS = [
 export const TOPBAR_HEIGHT = 72; // px when visible
 
 export default function TopBar({ onHeightChange }: TopBarProps) {
-  const socialLinks: Record<string, string> = {
-    facebook: getContent("social", "facebook"),
-    twitter: getContent("social", "twitter"),
-    linkedin: getContent("social", "linkedin"),
-    youtube: getContent("social", "youtube"),
-    instagram: getContent("social", "instagram"),
-  };
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>(() => getDefaultSection("social"));
 
   useEffect(() => {
     onHeightChange(TOPBAR_HEIGHT);
   }, [onHeightChange]);
+
+  useEffect(() => {
+    getSection("social").then(setSocialLinks).catch(() => {});
+  }, []);
 
   return (
     <div className="relative z-50">

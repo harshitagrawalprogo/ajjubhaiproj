@@ -1,5 +1,13 @@
 import type { Member } from './supabase';
 import { TIER_COLORS } from './membershipDb';
+import { fetchDocumentTemplates, type DocumentTemplate } from './documentTemplates';
+import { buildApiUrl } from './api';
+
+export const LIFE_CERTIFICATE_TEMPLATE_VERSION = 4;
+const LIFE_CERTIFICATE_TEMPLATE_URL = '/membership/life-membership-certificate-template.png';
+
+// Cache the heavy background image so subsequent dashboard visits are instant.
+let _cachedTemplateImage: HTMLImageElement | null = null;
 
 // ─────────────────────────────────────────────────────────────
 //  Helpers
@@ -12,6 +20,20 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onerror = reject;
     img.src = src;
   });
+}
+
+function drawableImageUrl(src: string) {
+  if (!src || src.startsWith('data:') || src.startsWith('blob:') || src.startsWith('/')) {
+    return src;
+  }
+
+  try {
+    const url = new URL(src, window.location.href);
+    if (url.origin === window.location.origin) return src;
+    return buildApiUrl(`/api/image-proxy?url=${encodeURIComponent(url.toString())}`);
+  } catch {
+    return src;
+  }
 }
 
 function wrapText(
@@ -37,10 +59,350 @@ function wrapText(
   ctx.fillText(line.trim(), x, y);
 }
 
+function getNumber(value: unknown, fallback: number) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function getString(value: unknown, fallback: string) {
+  return typeof value === 'string' && value.trim() ? value : fallback;
+}
+
+function formatIssueDate(member: Member) {
+  return new Date(member.issue_date || member.approved_at || member.created_at).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+async function getTemplate(key: string): Promise<DocumentTemplate | undefined> {
+  const templates = await fetchDocumentTemplates();
+  return templates.find((template) => template.key === key && template.template_url);
+}
+
+function getMembershipNumberText(member: Member) {
+  return String(member.membership_number || member.membership_id.replace('LISA/', '')).trim();
+}
+
+function createCanvas(width: number, height: number) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  return canvas;
+}
+
+function fitFont(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  fontFamily: string,
+  fontWeight: string,
+  maxWidth: number,
+  startSize: number,
+  minSize: number
+) {
+  let size = startSize;
+  while (size > minSize) {
+    ctx.font = `${fontWeight} ${size}px ${fontFamily}`;
+    if (ctx.measureText(text).width <= maxWidth) break;
+    size -= 2;
+  }
+  return size;
+}
+
+function splitTextIntoLines(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  maxLines: number
+) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = '';
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (ctx.measureText(next).width <= maxWidth) {
+      current = next;
+      continue;
+    }
+
+    if (current) lines.push(current);
+    current = word;
+
+    if (lines.length === maxLines - 1) break;
+  }
+
+  if (current) lines.push(current);
+
+  if (lines.length > maxLines) {
+    lines.length = maxLines;
+  }
+
+  const consumed = lines.join(' ').split(/\s+/).filter(Boolean).length;
+  if (consumed < words.length && lines.length > 0) {
+    let last = lines[lines.length - 1];
+    while (last.length > 1 && ctx.measureText(`${last}...`).width > maxWidth) {
+      last = last.slice(0, -1).trimEnd();
+    }
+    lines[lines.length - 1] = `${last}...`;
+  }
+
+  return lines;
+}
+
+function drawCenteredTextBlock(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  options: {
+    x: number;
+    y: number;
+    maxWidth: number;
+    lineHeight: number;
+    maxLines: number;
+    fontFamily: string;
+    fontWeight: string;
+    startSize: number;
+    minSize: number;
+    color: string;
+  }
+) {
+  let size = options.startSize;
+  let lines: string[] = [];
+
+  while (size >= options.minSize) {
+    ctx.font = `${options.fontWeight} ${size}px ${options.fontFamily}`;
+    lines = splitTextIntoLines(ctx, text, options.maxWidth, options.maxLines);
+    if (lines.length <= options.maxLines) break;
+    size -= 2;
+  }
+
+  ctx.font = `${options.fontWeight} ${size}px ${options.fontFamily}`;
+  ctx.fillStyle = options.color;
+  ctx.textAlign = 'center';
+  const totalHeight = (lines.length - 1) * options.lineHeight;
+  let lineY = options.y - totalHeight / 2;
+  for (const line of lines) {
+    ctx.fillText(line, options.x, lineY);
+    lineY += options.lineHeight;
+  }
+}
+
+async function generateLifeMembershipCertificate(member: Member): Promise<string> {
+  // Use cached template to avoid re-fetching 2MB image on every call.
+  if (!_cachedTemplateImage) {
+    _cachedTemplateImage = await loadImage(LIFE_CERTIFICATE_TEMPLATE_URL);
+  }
+  const background = _cachedTemplateImage;
+  // Canvas is exactly 2000 × 1414 px
+  const W = background.width;   // 2000
+  const H = background.height;  // 1414
+  const canvas = createCanvas(W, H);
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(background, 0, 0, W, H);
+
+  // ── Positions scaled from the reference HTML (canvas 1200×850 → 2000×1414)
+  // Scale X = 2000/1200 = 1.6667  |  Scale Y = 1414/850 = 1.6635
+  //
+  // REF POS (1200×850)           SCALED (2000×1414)
+  //  name        700, 480    →    1167, 799
+  //  detail      700, 510    →    1167, 849
+  //  membershipNo 915, 605   →    1525, 1007
+  //  issuedOnVal  750, 700   →    1250, 1165
+  //  photo        x=95,y=495,r=105 → cx=333,cy=999,r=175
+
+  ctx.textAlign = 'center';
+
+  // ── Member name ──────────────────────────────────────────────────────
+  // ref: font 'bold 32px Georgia, serif' scaled → 53px
+  const rawName = member.name.trim().toUpperCase();
+  const name = rawName.length > 32 ? rawName.slice(0, 31) + '…' : rawName;
+  ctx.fillStyle = '#1e2a8a';
+  const nameSize = fitFont(ctx, name, 'Georgia, serif', 'bold', 880, 53, 32);
+  ctx.font = `bold ${nameSize}px Georgia, serif`;
+  ctx.fillText(name, 1167, 799);
+
+  // ── Designation / institution ─────────────────────────────────────────
+  // ref: font '30px Georgia, serif' scaled → 50px
+  // Build detail: prefer custom_detail, fallback to designation + institution
+  const rawDetail = member.custom_detail?.trim() ||
+    [member.designation, member.institution].filter(Boolean).join(', ');
+  const detail = rawDetail.length > 60 ? rawDetail.slice(0, 59) + '…' : rawDetail;
+
+  if (detail) {
+    drawCenteredTextBlock(ctx, detail, {
+      x: 1167,
+      y: 849,
+      maxWidth: 890,
+      lineHeight: 52,
+      maxLines: 2,
+      fontFamily: 'Georgia, serif',
+      fontWeight: '600',
+      startSize: 50,
+      minSize: 28,
+      color: '#2d2d2d',
+    });
+  }
+
+  // ── Membership number ─────────────────────────────────────────────────
+  // Template already prints "Membership No. LISA/" — draw ONLY the digits.
+  // ref: font 'bold 38px Georgia, serif' @ x=915 (center) scaled → 63px @ x=1525
+  // We use textAlign='center' and position at 1525 so the number centres after "LISA/"
+  const membershipNumber = getMembershipNumberText(member);
+  ctx.fillStyle = '#1e2a8a';
+  const memSize = fitFont(ctx, membershipNumber, 'Georgia, serif', 'bold', 300, 63, 38);
+  ctx.font = `bold ${memSize}px Georgia, serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText(membershipNumber, 1525, 1007);
+
+  // ── Issue date ────────────────────────────────────────────────────────
+  // ref: font 'italic 24px Georgia, serif' @ (750,700) scaled → 40px @ (1250,1165)
+  const issueDate = formatIssueDate(member);
+  ctx.fillStyle = '#111111';
+  ctx.font = 'italic bold 40px Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(issueDate, 1250, 1165);
+
+  // ── Member photo ──────────────────────────────────────────────────────
+  // ref: photo x=95, y=495, r=105  →  cx=333, cy=999, r=175
+  const memberPhoto = member.photo_data_url || member.photo_url;
+  if (memberPhoto) {
+    try {
+      const image = await loadImage(drawableImageUrl(memberPhoto));
+      const cx = 333, cy = 999, r = 175;
+      const size = Math.min(image.width, image.height);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(
+        image,
+        (image.width - size) / 2, (image.height - size) / 2, size, size,
+        cx - r, cy - r, r * 2, r * 2
+      );
+      ctx.restore();
+    } catch { /* skip if photo fails to load */ }
+  }
+
+  // Output JPEG at 87% quality — ~10x smaller than PNG, visually identical for certificates.
+  return canvas.toDataURL('image/jpeg', 0.87);
+}
+
+async function generateCertificateFromTemplate(member: Member, template: DocumentTemplate): Promise<string> {
+  const map = template.field_map || {};
+  const W = getNumber(map.width, 1200);
+  const H = getNumber(map.height, 850);
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  const bg = await loadImage(drawableImageUrl(template.template_url));
+  ctx.drawImage(bg, 0, 0, W, H);
+
+  const name = map.name && typeof map.name === 'object' ? map.name as Record<string, unknown> : {};
+  const detail = map.detail && typeof map.detail === 'object' ? map.detail as Record<string, unknown> : {};
+  const membership = map.membership && typeof map.membership === 'object' ? map.membership as Record<string, unknown> : {};
+  const date = map.date && typeof map.date === 'object' ? map.date as Record<string, unknown> : {};
+  const photo = map.photo && typeof map.photo === 'object' ? map.photo as Record<string, unknown> : {};
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = getString(name.color, '#000000');
+  ctx.font = getString(name.font, 'bold 32px Georgia, serif');
+  ctx.fillText(member.name.toUpperCase(), getNumber(name.x, 700), getNumber(name.y, 480));
+
+  ctx.fillStyle = getString(detail.color, '#000000');
+  ctx.font = getString(detail.font, '30px Georgia, serif');
+  ctx.fillText(member.custom_detail || `${member.designation}, ${member.institution}`, getNumber(detail.x, 700), getNumber(detail.y, 510));
+
+  ctx.fillStyle = getString(membership.color, '#000000');
+  ctx.font = getString(membership.font, 'bold 38px Georgia, serif');
+  ctx.fillText(String(member.membership_number || member.membership_id.replace('LISA/', '')), getNumber(membership.x, 915), getNumber(membership.y, 605));
+
+  ctx.fillStyle = getString(date.color, '#000000');
+  ctx.font = getString(date.font, 'italic 24px Georgia, serif');
+  ctx.fillText(formatIssueDate(member), getNumber(date.x, 750), getNumber(date.y, 700));
+
+  const memberPhoto = member.photo_data_url || member.photo_url;
+  if (memberPhoto) {
+    const img = await loadImage(drawableImageUrl(memberPhoto));
+    const x = getNumber(photo.x, 95);
+    const y = getNumber(photo.y, 495);
+    const w = getNumber(photo.w, 210);
+    const h = getNumber(photo.h, 210);
+    const r = getNumber(photo.r, Math.min(w, h) / 2);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x + w / 2, y + h / 2, r, 0, Math.PI * 2);
+    ctx.clip();
+    const sz = Math.min(img.width, img.height);
+    ctx.drawImage(img, (img.width - sz) / 2, (img.height - sz) / 2, sz, sz, x, y, w, h);
+    ctx.restore();
+  }
+
+  return canvas.toDataURL('image/png');
+}
+
+async function generateIdSideFromTemplate(member: Member, template: DocumentTemplate, fallbackSize: { width: number; height: number }) {
+  const map = template.field_map || {};
+  const W = getNumber(map.width, fallbackSize.width);
+  const H = getNumber(map.height, fallbackSize.height);
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  const bg = await loadImage(drawableImageUrl(template.template_url));
+  ctx.drawImage(bg, 0, 0, W, H);
+
+  const draw = (key: string, text: string, fallback: { x: number; y: number; font: string; color: string; align?: CanvasTextAlign }) => {
+    const spec = map[key] && typeof map[key] === 'object' ? map[key] as Record<string, unknown> : {};
+    ctx.textAlign = getString(spec.align, fallback.align || 'left') as CanvasTextAlign;
+    ctx.fillStyle = getString(spec.color, fallback.color);
+    ctx.font = getString(spec.font, fallback.font);
+    ctx.fillText(text, getNumber(spec.x, fallback.x), getNumber(spec.y, fallback.y));
+  };
+
+  draw('name', member.name.toUpperCase(), { x: 30, y: 188, font: 'bold 20px Inter, sans-serif', color: '#ffffff' });
+  draw('designation', member.designation || '-', { x: 30, y: 226, font: '13px Inter, sans-serif', color: '#ffffff' });
+  draw('institution', member.institution || '-', { x: 30, y: 264, font: '12px Inter, sans-serif', color: '#ffffff' });
+  draw('membership', member.membership_id, { x: 44, y: 342, font: 'bold 17px Inter, sans-serif', color: '#ffffff' });
+  draw('issueDate', formatIssueDate(member), { x: W / 2, y: H - 14, font: '9px Inter, sans-serif', color: '#ffffff', align: 'center' });
+
+  const photo = map.photo && typeof map.photo === 'object' ? map.photo as Record<string, unknown> : {};
+  const memberPhoto = member.photo_data_url || member.photo_url;
+  if (memberPhoto) {
+    const img = await loadImage(drawableImageUrl(memberPhoto));
+    const x = getNumber(photo.x, W - 130);
+    const y = getNumber(photo.y, 155);
+    const w = getNumber(photo.w, 110);
+    const h = getNumber(photo.h, 110);
+    ctx.save();
+    roundRect(ctx, x, y, w, h, getNumber(photo.r, 8));
+    ctx.clip();
+    ctx.drawImage(img, x, y, w, h);
+    ctx.restore();
+  }
+
+  return canvas.toDataURL('image/png');
+}
+
 // ─────────────────────────────────────────────────────────────
 //  MEMBERSHIP CERTIFICATE  (1122 × 794 px – A4 landscape @96dpi)
 // ─────────────────────────────────────────────────────────────
 export async function generateCertificate(member: Member): Promise<string> {
+  if (member.membership_tier === 'life') {
+    return generateLifeMembershipCertificate(member);
+  }
+
+  const template = await getTemplate('certificate');
+  if (template) {
+    try {
+      return await generateCertificateFromTemplate(member, template);
+    } catch {
+      // Fall back to the built-in certificate when the external template cannot be drawn.
+    }
+  }
+
   const W = 1122, H = 794;
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -282,6 +644,19 @@ export async function generateCertificate(member: Member): Promise<string> {
 //  MEMBERSHIP ID CARD  (638 × 402 px – CR80 credit card)
 // ─────────────────────────────────────────────────────────────
 export async function generateIdCard(member: Member): Promise<{ front: string; back: string }> {
+  const [frontTemplate, backTemplate] = await Promise.all([getTemplate('id_front'), getTemplate('id_back')]);
+  if (frontTemplate || backTemplate) {
+    try {
+      const [frontUrl, backUrl] = await Promise.all([
+        frontTemplate ? generateIdSideFromTemplate(member, frontTemplate, { width: 638, height: 402 }) : Promise.resolve(''),
+        backTemplate ? generateIdSideFromTemplate(member, backTemplate, { width: 638, height: 402 }) : Promise.resolve(''),
+      ]);
+      if (frontUrl && backUrl) return { front: frontUrl, back: backUrl };
+    } catch {
+      // Fall back to the built-in ID card design when an external template is unavailable.
+    }
+  }
+
   const W = 638, H = 402;
   const tierColor = TIER_COLORS[member.membership_tier] || '#c9a84c';
 
@@ -362,7 +737,7 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   const memberPhoto = member.photo_data_url || member.photo_url;
   if (memberPhoto) {
     try {
-      const photo = await loadImage(memberPhoto);
+      const photo = await loadImage(drawableImageUrl(memberPhoto));
       fc.save();
       roundRect(fc, photoX, photoY, photoSize, photoSize, 8);
       fc.clip();

@@ -20,6 +20,8 @@ export interface Member {
   status: MemberStatus;
   photo_data_url?: string;
   photo_url?: string;
+  certificate_data_url?: string;
+  certificate_template_version?: number;
   created_at: string;
   approved_at?: string;
   issue_date?: string;

@@ -5,15 +5,16 @@ import {
   LayoutDashboard, Users, Settings, LogOut, Globe,
   Phone, Mail, MapPin, Youtube, Facebook, Twitter,
   Linkedin, Instagram, Save, ChevronRight, Menu, X,
-  CalendarDays, Plus, Trash2, Edit2, type LucideIcon
+  CalendarDays, Plus, Trash2, Edit2, Image, type LucideIcon
 } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { getSection, setSection } from "@/lib/contentDb";
+import { getDefaultSection, getSection, setSection } from "@/lib/contentDb";
 import { getAllMembers, updateMemberStatus, deleteMember } from "@/lib/membershipDb";
 import { fetchEvents, saveEvent, deleteEvent, type EventItem } from "@/lib/eventsDb";
+import { fetchDocumentTemplates, saveDocumentTemplate, type DocumentTemplate } from "@/lib/documentTemplates";
 import type { Member } from "@/lib/supabase";
 
-type Tab = "dashboard" | "members" | "events" | "content" | "social";
+type Tab = "dashboard" | "members" | "events" | "content" | "social" | "templates";
 
 export default function AdminDashboard() {
   const { isAuthenticated, logout } = useAdminAuth();
@@ -33,6 +34,7 @@ export default function AdminDashboard() {
     { id: "events", label: "Events CMS", Icon: CalendarDays },
     { id: "content", label: "Site Content", Icon: Globe },
     { id: "social", label: "Social Links", Icon: Settings },
+    { id: "templates", label: "Templates", Icon: Image },
   ];
 
   return (
@@ -106,6 +108,7 @@ export default function AdminDashboard() {
           {tab === "events" && <EventsTab />}
           {tab === "content" && <ContentTab />}
           {tab === "social" && <SocialTab />}
+          {tab === "templates" && <TemplatesTab />}
         </div>
       </div>
     </div>
@@ -269,18 +272,25 @@ function MembersTab() {
 // ─────────── Site content tab ────────────────────────────────────
 function ContentTab() {
   const [data, setData] = useState(() => ({
-    ...getSection("contact"),
-    ...getSection("hero"),
+    ...getDefaultSection("contact"),
+    ...getDefaultSection("hero"),
   }));
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = () => {
-    setSection("contact", {
+  useEffect(() => {
+    Promise.all([getSection("contact"), getSection("hero")])
+      .then(([contact, hero]) => setData({ ...contact, ...hero }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    await setSection("contact", {
       email: data.email || "",
       phone: data.phone || "",
       address: data.address || "",
     });
-    setSection("hero", {
+    await setSection("hero", {
       headline: data.headline || "",
       subtitle: data.subtitle || "",
     });
@@ -291,6 +301,7 @@ function ContentTab() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <h1 className="text-2xl font-bold text-white mb-8">Site Content</h1>
+      {loading && <p className="text-white/40 text-sm mb-4">Loading saved content...</p>}
       <div className="space-y-6">
         <Section title="Contact Information">
           <Field label="Email" icon={<Mail size={14} />} value={data.email || ""} onChange={v => setData(d => ({ ...d, email: v }))} />
@@ -314,11 +325,16 @@ function ContentTab() {
 
 // ─────────── Social links tab ────────────────────────────────────
 function SocialTab() {
-  const [data, setData] = useState(() => getSection("social"));
+  const [data, setData] = useState(() => getDefaultSection("social"));
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = () => {
-    setSection("social", data);
+  useEffect(() => {
+    getSection("social").then(setData).finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    await setSection("social", data);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -335,6 +351,7 @@ function SocialTab() {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <h1 className="text-2xl font-bold text-white mb-8">Social Media Links</h1>
       <p className="text-white/40 text-sm mb-6">These URLs are displayed in the top bar social icons.</p>
+      {loading && <p className="text-white/40 text-sm mb-4">Loading saved links...</p>}
       <div className="space-y-6">
         <Section title="Social Profiles">
           {socialFields.map(({ key, label, Icon }) => (
@@ -445,6 +462,20 @@ function EventsTab() {
           <Section title="Additional Info">
             <Field label="Speakers (comma separated)" value={editingEvent.speakers?.join(', ') || ""} onChange={v => setEditingEvent({ ...editingEvent, speakers: v.split(',').map(s => s.trim()).filter(Boolean) })} />
             <Field label="Agenda (comma separated)" value={editingEvent.agenda?.join(', ') || ""} onChange={v => setEditingEvent({ ...editingEvent, agenda: v.split(',').map(a => a.trim()).filter(Boolean) })} textarea />
+            <Field label="Image URL" value={editingEvent.image_url || ""} onChange={v => setEditingEvent({ ...editingEvent, image_url: v })} />
+            <Field label="Registration URL" value={editingEvent.registration_url || ""} onChange={v => setEditingEvent({ ...editingEvent, registration_url: v })} />
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Sort Order" value={String(editingEvent.sort_order || 0)} onChange={v => setEditingEvent({ ...editingEvent, sort_order: Number(v || 0) })} />
+              <label className="flex items-center gap-3 pt-6 text-sm text-white/70">
+                <input
+                  type="checkbox"
+                  checked={Boolean(editingEvent.is_featured)}
+                  onChange={e => setEditingEvent({ ...editingEvent, is_featured: e.target.checked })}
+                  className="h-4 w-4 accent-[#c9a84c]"
+                />
+                Featured on home page
+              </label>
+            </div>
           </Section>
           <button onClick={handleSave} className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)", color: "#0d1b3e" }}>
             <Save size={16} /> Save Event
@@ -458,7 +489,7 @@ function EventsTab() {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-white">Events CMS</h1>
-        <button onClick={() => setEditingEvent({ title: '', date: '', location: '', type: '', description: '', speakers: [], agenda: [] })}
+        <button onClick={() => setEditingEvent({ title: '', date: '', location: '', type: 'Conference', description: '', speakers: [], agenda: [], image_url: '', registration_url: '', is_featured: true, sort_order: events.length * 10 + 10 })}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90"
           style={{ background: "#c9a84c", color: "#0d1b3e" }}>
           <Plus size={16} /> Add Event
@@ -475,6 +506,7 @@ function EventsTab() {
                   <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(201,168,76,0.15)", color: "#c9a84c" }}>{event.type}</span>
                 </div>
                 <p className="text-white/40 text-xs mt-1">{event.date} · {event.location}</p>
+                {event.registration_url && <p className="text-white/30 text-xs truncate">{event.registration_url}</p>}
               </div>
               <div className="flex gap-2">
                 <button onClick={() => setEditingEvent(event)} className="p-2 rounded-lg text-white/50 hover:text-[#c9a84c] hover:bg-[#c9a84c]/10 transition-all border border-transparent hover:border-[#c9a84c]/30">
@@ -485,6 +517,86 @@ function EventsTab() {
                 </button>
               </div>
             </div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function TemplatesTab() {
+  const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+
+  const load = () => {
+    setLoading(true);
+    fetchDocumentTemplates()
+      .then((data) => {
+        setTemplates(data);
+        setDrafts(
+          data.reduce<Record<string, string>>((acc, template) => {
+            acc[template.key] = JSON.stringify(template.field_map || {}, null, 2);
+            return acc;
+          }, {}),
+        );
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, []);
+
+  const handleSave = async (template: DocumentTemplate) => {
+    setMessage("");
+    setSavingKey(template.key);
+    try {
+      const fieldMap = drafts[template.key]?.trim() ? JSON.parse(drafts[template.key]) : {};
+      await saveDocumentTemplate({ ...template, field_map: fieldMap });
+      setMessage("Template settings saved.");
+      load();
+    } catch (error) {
+      setMessage(error instanceof SyntaxError ? "Field map JSON is invalid." : "Could not save template settings.");
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
+  const updateTemplate = (key: string, patch: Partial<DocumentTemplate>) => {
+    setTemplates((current) => current.map((template) => template.key === key ? { ...template, ...patch } : template));
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <h1 className="text-2xl font-bold text-white mb-3">Document Templates</h1>
+      <p className="text-white/45 text-sm mb-8">
+        Paste public Canva export image URLs here. The generator overlays member data from the persisted membership record, including the membership ID.
+      </p>
+      {message && <p className="text-sm mb-4" style={{ color: message.includes("saved") ? "#22c55e" : "#ef4444" }}>{message}</p>}
+      {loading ? (
+        <p className="text-white/40 text-center py-12">Loading templates...</p>
+      ) : (
+        <div className="space-y-6">
+          {templates.map((template) => (
+            <Section key={template.key} title={template.label}>
+              <Field label="Label" value={template.label} onChange={v => updateTemplate(template.key, { label: v })} />
+              <Field label="Canva Export / Template Image URL" value={template.template_url} onChange={v => updateTemplate(template.key, { template_url: v })} />
+              <Field
+                label="Field Map JSON"
+                textarea
+                value={drafts[template.key] || "{}"}
+                onChange={v => setDrafts(current => ({ ...current, [template.key]: v }))}
+              />
+              <button
+                onClick={() => handleSave(template)}
+                disabled={savingKey === template.key}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all hover:-translate-y-0.5 disabled:opacity-60"
+                style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)", color: "#0d1b3e" }}
+              >
+                <Save size={16} /> {savingKey === template.key ? "Saving..." : "Save Template"}
+              </button>
+            </Section>
           ))}
         </div>
       )}

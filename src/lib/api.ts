@@ -3,18 +3,24 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 export const MEMBER_TOKEN_KEY = "lisacademy_member_token";
 export const ADMIN_TOKEN_KEY = "lisacademy_admin_token";
 
-function buildUrl(path: string) {
+export function buildApiUrl(path: string) {
   return `${API_BASE}${path}`;
 }
 
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(buildUrl(path), {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers || {}),
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(buildApiUrl(path), {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers || {}),
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Network request failed.";
+    throw new Error(message.includes("Failed to fetch") ? "Could not reach the server. Please make sure the API is running and try again." : message);
+  }
 
   const isJson = response.headers.get("content-type")?.includes("application/json");
   const payload = isJson ? await response.json() : null;

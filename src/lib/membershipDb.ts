@@ -1,5 +1,6 @@
 import { apiRequest, clearMemberToken, getMemberToken, setMemberToken, getAdminToken, setAdminToken, clearAdminToken } from "./api";
 import type { Member, MembershipTier, MemberStatus } from "./membershipTypes";
+import { LIFE_CERTIFICATE_TEMPLATE_VERSION } from "./certificateGenerator";
 export { MEMBERSHIP_TIERS, TIER_COLORS } from "./membershipTypes";
 
 export interface CreateMemberInput {
@@ -128,4 +129,22 @@ export async function deleteMember(id: string): Promise<void> {
     method: "DELETE",
     headers: adminHeaders(),
   });
+}
+
+export async function saveMemberCertificate(certificate_data_url: string): Promise<{ saved: true; certificate_template_version: number }> {
+  const token = getMemberToken();
+  if (!token) {
+    throw new Error("Member authentication required.");
+  }
+
+  const response = await apiRequest<{ saved: true; certificate_template_version: number }>("/api/members/me/certificate", {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      certificate_data_url,
+      certificate_template_version: LIFE_CERTIFICATE_TEMPLATE_VERSION,
+    }),
+  });
+
+  return response;
 }

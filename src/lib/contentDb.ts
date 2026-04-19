@@ -1,83 +1,85 @@
-// ─────────────────────────────────────────────────────────────
-// contentDb.ts  – localStorage-backed site content store
-// ─────────────────────────────────────────────────────────────
-const CONTENT_KEY = 'lisacademy_content';
+import { apiRequest, getAdminToken } from "./api";
 
 export type ContentSection =
-  | 'hero'
-  | 'about'
-  | 'contact'
-  | 'social'
-  | 'topbar';
+  | "hero"
+  | "about"
+  | "contact"
+  | "social"
+  | "topbar";
 
 export interface ContentItem {
   section: ContentSection;
   key: string;
   value: string;
+  updated_at?: string;
 }
 
 const defaults: ContentItem[] = [
-  // Hero
-  { section: 'hero', key: 'headline', value: 'Learn. Inspire. Serve.' },
-  { section: 'hero', key: 'subtitle', value: "A professional Public Charitable Trust advancing the Library & Information Science profession through world-class training, technology implementation, and research across India." },
-  // About
-  { section: 'about', key: 'description', value: "LIS Academy is India's Premier Library & Information Science Platform." },
-  // Contact
-  { section: 'contact', key: 'email', value: 'info@lisacademy.org' },
-  { section: 'contact', key: 'phone', value: '080-35006965' },
-  { section: 'contact', key: 'address', value: '7/29, Vijayalakshmi Complex, 1st Main Road, Gokul, Bengaluru – 560054' },
-  // Social links
-  { section: 'social', key: 'facebook', value: 'https://facebook.com/lisacademy' },
-  { section: 'social', key: 'twitter', value: 'https://twitter.com/lisacademy' },
-  { section: 'social', key: 'linkedin', value: 'https://linkedin.com/company/lisacademy' },
-  { section: 'social', key: 'youtube', value: 'https://youtube.com/@lisacademy' },
-  { section: 'social', key: 'instagram', value: 'https://instagram.com/lisacademy' },
-  // Top bar
-  { section: 'topbar', key: 'tagline', value: 'LEARN | INSPIRE | SERVE' },
+  { section: "hero", key: "headline", value: "Learn. Inspire. Serve." },
+  { section: "hero", key: "subtitle", value: "A professional Public Charitable Trust advancing the Library & Information Science profession through world-class training, technology implementation, and research across India." },
+  { section: "about", key: "description", value: "LIS Academy is India's Premier Library & Information Science Platform." },
+  { section: "contact", key: "email", value: "info@lisacademy.org" },
+  { section: "contact", key: "phone", value: "080-35006965" },
+  { section: "contact", key: "address", value: "7/29, Vijayalakshmi Complex, 1st Main Road, Gokul, Bengaluru - 560054" },
+  { section: "social", key: "facebook", value: "https://facebook.com/lisacademy" },
+  { section: "social", key: "twitter", value: "https://twitter.com/lisacademy" },
+  { section: "social", key: "linkedin", value: "https://linkedin.com/company/lisacademy" },
+  { section: "social", key: "youtube", value: "https://youtube.com/@lisacademy" },
+  { section: "social", key: "instagram", value: "https://instagram.com/lisacademy" },
+  { section: "topbar", key: "tagline", value: "LEARN | INSPIRE | SERVE" },
 ];
 
-function loadAll(): ContentItem[] {
-  try {
-    const raw = localStorage.getItem(CONTENT_KEY);
-    if (!raw) return defaults;
-    const stored: ContentItem[] = JSON.parse(raw);
-    // Merge defaults for any missing keys
-    const merged = [...defaults];
-    stored.forEach(s => {
-      const idx = merged.findIndex(d => d.section === s.section && d.key === s.key);
-      if (idx !== -1) merged[idx] = s;
-      else merged.push(s);
+const cache = new Map<string, Record<string, string>>();
+
+function adminHeaders() {
+  const token = getAdminToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function toSection(items: ContentItem[], section: ContentSection): Record<string, string> {
+  const merged = defaults
+    .filter((item) => item.section === section)
+    .reduce<Record<string, string>>((acc, item) => {
+      acc[item.key] = item.value;
+      return acc;
+    }, {});
+
+  items
+    .filter((item) => item.section === section)
+    .forEach((item) => {
+      merged[item.key] = item.value;
     });
-    return merged;
+
+  return merged;
+}
+
+export function getDefaultSection(section: ContentSection): Record<string, string> {
+  return toSection(defaults, section);
+}
+
+export async function getSection(section: ContentSection): Promise<Record<string, string>> {
+  try {
+    const response = await apiRequest<{ content: ContentItem[] }>(`/api/content?section=${encodeURIComponent(section)}`);
+    const data = toSection(response.content, section);
+    cache.set(section, data);
+    return data;
   } catch {
-    return defaults;
+    return cache.get(section) || getDefaultSection(section);
   }
 }
 
-function saveAll(items: ContentItem[]) {
-  localStorage.setItem(CONTENT_KEY, JSON.stringify(items));
+export async function setSection(section: ContentSection, data: Record<string, string>): Promise<Record<string, string>> {
+  const response = await apiRequest<{ content: ContentItem[] }>(`/api/admin/content/${section}`, {
+    method: "PUT",
+    headers: adminHeaders(),
+    body: JSON.stringify({ data }),
+  });
+  const saved = toSection(response.content, section);
+  cache.set(section, saved);
+  return saved;
 }
 
-export function getContent(section: ContentSection, key: string): string {
-  const all = loadAll();
-  return all.find(i => i.section === section && i.key === key)?.value ?? '';
-}
-
-export function setContent(section: ContentSection, key: string, value: string) {
-  const all = loadAll();
-  const idx = all.findIndex(i => i.section === section && i.key === key);
-  if (idx !== -1) all[idx].value = value;
-  else all.push({ section, key, value });
-  saveAll(all);
-}
-
-export function getSection(section: ContentSection): Record<string, string> {
-  const all = loadAll();
-  return all
-    .filter(i => i.section === section)
-    .reduce<Record<string, string>>((acc, i) => { acc[i.key] = i.value; return acc; }, {});
-}
-
-export function setSection(section: ContentSection, data: Record<string, string>) {
-  Object.entries(data).forEach(([key, value]) => setContent(section, key, value));
+export async function getContent(section: ContentSection, key: string): Promise<string> {
+  const data = await getSection(section);
+  return data[key] || "";
 }
