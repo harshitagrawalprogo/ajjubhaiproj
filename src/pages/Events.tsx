@@ -1,8 +1,8 @@
-import { motion, useInView } from "framer-motion";
-import { useRef, useState, useEffect } from "react";
+ï»¿import { motion, useInView } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import PageLayout from "@/components/PageLayout";
 import PageHeader from "@/components/PageHeader";
-import { Calendar, MapPin, Clock, Users, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, MapPin, Clock, Users, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { fetchEvents, type EventItem } from "@/lib/eventsDb";
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -25,11 +25,14 @@ function FadeIn({ children, delay = 0, className = "" }: { children: React.React
 
 export default function Events() {
   const [events, setEvents] = useState<EventItem[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState(0);
   const [calMonth, setCalMonth] = useState(3);
 
   useEffect(() => {
-    fetchEvents().then(setEvents);
+    fetchEvents().then((data) => {
+      setEvents(data);
+      if (data.length > 0) setSelectedEvent(0);
+    });
   }, []);
 
   return (
@@ -37,7 +40,7 @@ export default function Events() {
       <PageHeader
         tag="Events"
         title="Conferences, Lectures, and Institutional Sessions"
-        description="This page now reflects LIS Academy's published conference history and its recurring professional development formats."
+        description="This page now reflects LIS Academy's published conference history and recurring professional formats through admin-managed event entries."
       />
 
       <section className="section-padding" style={{ background: "#091529" }}>
@@ -69,15 +72,19 @@ export default function Events() {
               {events.filter((e) => e.date.toLowerCase().includes(months[calMonth].toLowerCase())).length > 0 ? (
                 events
                   .filter((e) => e.date.toLowerCase().includes(months[calMonth].toLowerCase()))
-                  .map((event) => (
-                    <div key={event.title} className="p-4 rounded-lg border border-white/10 bg-white/5 flex items-center justify-between gap-3">
+                  .map((event, index) => (
+                    <button
+                      key={event.id || event.title}
+                      onClick={() => setSelectedEvent(index)}
+                      className="w-full p-4 rounded-lg border border-white/10 bg-white/5 flex items-center justify-between gap-3 text-left"
+                    >
                       <div>
                         <span className="text-xs font-medium" style={{ color: "#c9a84c" }}>{event.type}</span>
                         <h3 className="font-semibold text-white text-sm">{event.title}</h3>
-                        <p className="text-xs text-white/40">{event.date} · {event.location}</p>
+                        <p className="text-xs text-white/40">{event.date} - {event.location}</p>
                       </div>
-                      <button className="shrink-0 text-xs px-3 py-1.5 rounded-lg border border-white/15 text-white/60 hover:text-white hover:border-white/30 transition-all">Details</button>
-                    </div>
+                      <span className="shrink-0 text-xs px-3 py-1.5 rounded-lg border border-white/15 text-white/60">Open</span>
+                    </button>
                   ))
               ) : (
                 <p className="text-center text-white/40 py-6 text-sm">No mapped items for {months[calMonth]}. Conference history and recurring formats are listed below.</p>
@@ -88,78 +95,95 @@ export default function Events() {
       </section>
 
       <section className="section-padding bg-[#0d1b3e]">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto space-y-8">
           <FadeIn>
-            <div className="mb-10">
+            <div>
               <span className="text-sm font-semibold tracking-widest uppercase mb-3 block" style={{ color: "#c9a84c" }}>All Events</span>
               <h2 className="font-serif text-3xl md:text-4xl font-bold text-white">Conference History and Recurring Formats</h2>
             </div>
           </FadeIn>
 
-          <div className="space-y-6">
-            {events.map((event, i) => (
-              <FadeIn key={event.title} delay={i * 0.05}>
-                <div className="rounded-xl border border-white/10 bg-white/5 overflow-hidden hover:border-white/20 transition-all">
-                  <div className="p-6 cursor-pointer" onClick={() => setSelectedEvent(selectedEvent === i ? null : i)}>
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium mb-2 bg-[#c9a84c]/15 text-[#c9a84c]">{event.type}</span>
-                        <h3 className="font-serif text-xl font-semibold text-white">{event.title}</h3>
-                        <p className="text-sm text-white/50 mt-1">{event.description}</p>
-                      </div>
-                      <div className="flex flex-col gap-2 text-sm text-white/40 shrink-0">
-                        <span className="flex items-center gap-1.5"><Calendar size={14} /> {event.date}</span>
-                        <span className="flex items-center gap-1.5"><MapPin size={14} /> {event.location}</span>
-                      </div>
+          {events.map((event, i) => (
+            <FadeIn key={event.id || event.title} delay={i * 0.05}>
+              <div
+                className="rounded-[42px] bg-[#f7f3f2] p-4 md:p-6 transition-all hover:scale-[1.01] cursor-pointer"
+                onClick={() => setSelectedEvent(i)}
+              >
+                <div className="grid gap-6 md:grid-cols-[1.15fr,1fr,300px] md:items-center">
+                  <div className="overflow-hidden rounded-[56px] bg-white shadow-sm">
+                    <img
+                      src={event.image_url || "/logo.png"}
+                      alt={event.title}
+                      className="h-[220px] w-full object-cover md:h-[360px]"
+                    />
+                  </div>
+
+                  <div className="text-center px-2 md:px-4">
+                    <div className="text-[clamp(22px,2.8vw,46px)] font-medium uppercase tracking-wide text-[#c04a10]">{event.title}</div>
+                    <div className="mt-4 text-[clamp(34px,4vw,64px)] leading-none uppercase text-[#1f66d1]">{event.type}</div>
+                    <div className="mt-6 text-[clamp(20px,2.6vw,40px)] uppercase text-[#111827]">{event.date}</div>
+                    <div className="mt-3 flex items-center justify-center gap-2 text-slate-600 text-base md:text-lg">
+                      <MapPin size={18} />
+                      <span>{event.location}</span>
                     </div>
                   </div>
 
-                  {selectedEvent === i && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="border-t border-white/10 px-6 pb-6"
-                    >
-                      <div className="grid md:grid-cols-2 gap-8 pt-6">
-                        <div>
-                          <h4 className="font-semibold text-white text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
-                            <Clock size={14} /> Agenda
-                          </h4>
-                          <ul className="space-y-2">
-                            {event.agenda.map((item, idx) => (
-                              <li key={item} className="flex items-center gap-2 text-sm text-white/55">
-                                <span className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: "rgba(201,168,76,0.18)", color: "#c9a84c" }}>{idx + 1}</span>
-                                {item}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-white text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
-                            <Users size={14} /> Speakers
-                          </h4>
-                          <ul className="space-y-2">
-                            {event.speakers.map((s) => (
-                              <li key={s} className="text-sm text-white/55">• {s}</li>
-                            ))}
-                          </ul>
-                          <button
-                            className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-[#0d1b3e] hover:-translate-y-0.5 transition-all"
-                            style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)" }}
-                          >
-                            Contact for Updates <ArrowRight size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
+                  <div className="flex flex-col gap-5 justify-center">
+                    <EventLinkButton href={event.brochure_url || event.registration_url} label="Conference Brochure" />
+                    <EventLinkButton href={event.gallery_url} label="Photo Gallery" />
+                    <EventLinkButton href={event.report_url} label="Conference Report" />
+                  </div>
                 </div>
-              </FadeIn>
-            ))}
-          </div>
+
+                {selectedEvent === i && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-6 grid gap-8 rounded-[30px] bg-white px-6 py-6 md:grid-cols-2"
+                  >
+                    <div>
+                      <h4 className="font-semibold text-[#0d1b3e] text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <Clock size={14} /> Agenda
+                      </h4>
+                      <ul className="space-y-2">
+                        {event.agenda.map((item, idx) => (
+                          <li key={item} className="flex items-center gap-2 text-sm text-slate-600">
+                            <span className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: "rgba(201,168,76,0.18)", color: "#c9a84c" }}>{idx + 1}</span>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-[#0d1b3e] text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <Users size={14} /> Speakers
+                      </h4>
+                      <ul className="space-y-2">
+                        {event.speakers.map((speaker) => (
+                          <li key={speaker} className="text-sm text-slate-600">- {speaker}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </FadeIn>
+          ))}
         </div>
       </section>
     </PageLayout>
+  );
+}
+
+function EventLinkButton({ href, label }: { href?: string; label: string }) {
+  const baseClass = "inline-flex min-h-[88px] items-center justify-center rounded-full border border-[#222] bg-white px-8 text-center text-[20px] md:text-[22px] text-[#171717] transition-all";
+  if (!href) {
+    return <div className={`${baseClass} opacity-50`}>{label}</div>;
+  }
+
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className={`${baseClass} hover:-translate-y-0.5`}>
+      <span className="inline-flex items-center gap-2">{label} <ExternalLink size={18} /></span>
+    </a>
   );
 }

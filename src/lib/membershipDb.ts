@@ -1,5 +1,5 @@
 import { apiRequest, clearMemberToken, getMemberToken, setMemberToken, getAdminToken, setAdminToken, clearAdminToken } from "./api";
-import type { Member, MembershipTier, MemberStatus } from "./membershipTypes";
+import type { Member, MembershipTier, MemberStatus, LifeCertificateEditorState } from "./membershipTypes";
 import { LIFE_CERTIFICATE_TEMPLATE_VERSION } from "./certificateGenerator";
 export { MEMBERSHIP_TIERS, TIER_COLORS } from "./membershipTypes";
 
@@ -18,6 +18,8 @@ export interface CreateMemberInput {
   pincode: string;
   membership_tier: MembershipTier;
   photo_data_url?: string;
+  certificate_editor_state?: LifeCertificateEditorState;
+  certificate_draft_data_url?: string;
 }
 
 interface MemberAuthResponse {
@@ -147,4 +149,25 @@ export async function saveMemberCertificate(certificate_data_url: string): Promi
   });
 
   return response;
+}
+
+export async function saveMemberCertificateDraft(
+  certificate_draft_data_url: string,
+  certificate_editor_state: LifeCertificateEditorState,
+  submit_for_review: boolean,
+): Promise<{ saved: true; submitted_at?: string }> {
+  const token = getMemberToken();
+  if (!token) {
+    throw new Error("Member authentication required.");
+  }
+
+  return apiRequest<{ saved: true; submitted_at?: string }>("/api/members/me/certificate-draft", {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      certificate_draft_data_url,
+      certificate_editor_state,
+      submit_for_review,
+    }),
+  });
 }

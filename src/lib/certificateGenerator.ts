@@ -1,13 +1,27 @@
 import type { Member } from './supabase';
+import type { LifeCertificateEditorState } from './membershipTypes';
 import { TIER_COLORS } from './membershipDb';
 import { fetchDocumentTemplates, type DocumentTemplate } from './documentTemplates';
 import { buildApiUrl } from './api';
 
 export const LIFE_CERTIFICATE_TEMPLATE_VERSION = 4;
-const LIFE_CERTIFICATE_TEMPLATE_URL = '/membership/life-membership-certificate-template.png';
+const LIFE_CERTIFICATE_DRAFT_TEMPLATE_URL = '/membership/rawwithoutsign.png';
+const LIFE_CERTIFICATE_TEMPLATE_URL = '/membership/life-membership-certificate-final.png';
 
-// Cache the heavy background image so subsequent dashboard visits are instant.
+export const DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE: LifeCertificateEditorState = {
+  nameX: 1167,
+  nameY: 799,
+  nameFontSize: 53,
+  detailX: 1167,
+  detailY: 849,
+  detailFontSize: 50,
+  photoX: 333,
+  photoY: 999,
+  photoRadius: 175,
+};
+
 let _cachedTemplateImage: HTMLImageElement | null = null;
+const _templateImageCache = new Map<string, HTMLImageElement>();
 
 // ─────────────────────────────────────────────────────────────
 //  Helpers
@@ -82,6 +96,22 @@ async function getTemplate(key: string): Promise<DocumentTemplate | undefined> {
 
 function getMembershipNumberText(member: Member) {
   return String(member.membership_number || member.membership_id.replace('LISA/', '')).trim();
+}
+
+export function normalizeLifeCertificateEditorState(
+  state?: Partial<LifeCertificateEditorState> | null,
+): LifeCertificateEditorState {
+  return {
+    nameX: typeof state?.nameX === 'number' ? state.nameX : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.nameX,
+    nameY: typeof state?.nameY === 'number' ? state.nameY : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.nameY,
+    nameFontSize: typeof state?.nameFontSize === 'number' ? state.nameFontSize : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.nameFontSize,
+    detailX: typeof state?.detailX === 'number' ? state.detailX : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.detailX,
+    detailY: typeof state?.detailY === 'number' ? state.detailY : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.detailY,
+    detailFontSize: typeof state?.detailFontSize === 'number' ? state.detailFontSize : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.detailFontSize,
+    photoX: typeof state?.photoX === 'number' ? state.photoX : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.photoX,
+    photoY: typeof state?.photoY === 'number' ? state.photoY : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.photoY,
+    photoRadius: typeof state?.photoRadius === 'number' ? state.photoRadius : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.photoRadius,
+  };
 }
 
 function createCanvas(width: number, height: number) {
@@ -287,6 +317,105 @@ async function generateLifeMembershipCertificate(member: Member): Promise<string
   return canvas.toDataURL('image/jpeg', 0.87);
 }
 
+async function getTemplateImage(src: string): Promise<HTMLImageElement> {
+  const cached = _templateImageCache.get(src);
+  if (cached) return cached;
+  const loaded = await loadImage(src);
+  _templateImageCache.set(src, loaded);
+  return loaded;
+}
+
+async function generateConfiguredLifeCertificate(
+  member: Member,
+  templateUrl: string,
+  editorState?: Partial<LifeCertificateEditorState> | null,
+  includeMembershipNumber = true,
+): Promise<string> {
+  const state = normalizeLifeCertificateEditorState(editorState || member.certificate_editor_state);
+  const background = await getTemplateImage(templateUrl);
+  const canvas = createCanvas(background.width, background.height);
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(background, 0, 0, background.width, background.height);
+  ctx.textAlign = 'center';
+
+  const rawName = member.name.trim().toUpperCase();
+  const name = rawName.length > 32 ? `${rawName.slice(0, 31)}...` : rawName;
+  ctx.fillStyle = '#1e2a8a';
+  const nameSize = fitFont(ctx, name, 'Georgia, serif', 'bold', 880, state.nameFontSize, 32);
+  ctx.font = `bold ${nameSize}px Georgia, serif`;
+  ctx.fillText(name, state.nameX, state.nameY);
+
+  const rawDetail = member.custom_detail?.trim() || [member.designation, member.institution].filter(Boolean).join(', ');
+  const detail = rawDetail.length > 60 ? `${rawDetail.slice(0, 59)}...` : rawDetail;
+  if (detail) {
+    drawCenteredTextBlock(ctx, detail, {
+      x: state.detailX,
+      y: state.detailY,
+      maxWidth: 890,
+      lineHeight: 52,
+      maxLines: 2,
+      fontFamily: 'Georgia, serif',
+      fontWeight: '600',
+      startSize: state.detailFontSize,
+      minSize: 28,
+      color: '#2d2d2d',
+    });
+  }
+
+  if (includeMembershipNumber) {
+    const membershipNumber = getMembershipNumberText(member);
+    ctx.fillStyle = '#1e2a8a';
+    const membershipSize = fitFont(ctx, membershipNumber, 'Georgia, serif', 'bold', 300, 63, 38);
+    ctx.font = `bold ${membershipSize}px Georgia, serif`;
+    ctx.fillText(membershipNumber, 1525, 1007);
+  }
+
+  ctx.fillStyle = '#111111';
+  ctx.font = 'italic bold 40px Georgia, serif';
+  ctx.fillText(formatIssueDate(member), 1250, 1165);
+
+  const memberPhoto = member.photo_data_url || member.photo_url;
+  if (memberPhoto) {
+    try {
+      const image = await loadImage(drawableImageUrl(memberPhoto));
+      const size = Math.min(image.width, image.height);
+      const radius = state.photoRadius;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(state.photoX, state.photoY, radius, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(
+        image,
+        (image.width - size) / 2,
+        (image.height - size) / 2,
+        size,
+        size,
+        state.photoX - radius,
+        state.photoY - radius,
+        radius * 2,
+        radius * 2,
+      );
+      ctx.restore();
+    } catch {
+      // Keep certificate generation usable even if the member photo cannot be drawn.
+    }
+  }
+
+  return canvas.toDataURL('image/jpeg', 0.87);
+}
+
+export async function generateLifeCertificateDraft(
+  member: Member,
+  editorState?: Partial<LifeCertificateEditorState> | null,
+): Promise<string> {
+  return generateConfiguredLifeCertificate(
+    member,
+    LIFE_CERTIFICATE_DRAFT_TEMPLATE_URL,
+    editorState,
+    false,
+  );
+}
+
 async function generateCertificateFromTemplate(member: Member, template: DocumentTemplate): Promise<string> {
   const map = template.field_map || {};
   const W = getNumber(map.width, 1200);
@@ -389,9 +518,17 @@ async function generateIdSideFromTemplate(member: Member, template: DocumentTemp
 // ─────────────────────────────────────────────────────────────
 //  MEMBERSHIP CERTIFICATE  (1122 × 794 px – A4 landscape @96dpi)
 // ─────────────────────────────────────────────────────────────
-export async function generateCertificate(member: Member): Promise<string> {
+export async function generateCertificate(
+  member: Member,
+  options?: { editorState?: Partial<LifeCertificateEditorState> | null },
+): Promise<string> {
   if (member.membership_tier === 'life') {
-    return generateLifeMembershipCertificate(member);
+    return generateConfiguredLifeCertificate(
+      member,
+      LIFE_CERTIFICATE_TEMPLATE_URL,
+      options?.editorState,
+      true,
+    );
   }
 
   const template = await getTemplate('certificate');

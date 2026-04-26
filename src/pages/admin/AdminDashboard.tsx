@@ -231,7 +231,7 @@ function MembersTab() {
                     {m.membership_tier}
                   </span>
                 </div>
-                <p className="text-white/40 text-xs mt-1 truncate">{m.email} · {m.membership_id}</p>
+                <p className="text-white/40 text-xs mt-1 truncate">{m.email} · {m.status === "approved" ? m.membership_id : (m.application_id || m.membership_id)}</p>
                 <p className="text-white/40 text-xs">{m.designation} — {m.institution}</p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
@@ -463,6 +463,9 @@ function EventsTab() {
             <Field label="Speakers (comma separated)" value={editingEvent.speakers?.join(', ') || ""} onChange={v => setEditingEvent({ ...editingEvent, speakers: v.split(',').map(s => s.trim()).filter(Boolean) })} />
             <Field label="Agenda (comma separated)" value={editingEvent.agenda?.join(', ') || ""} onChange={v => setEditingEvent({ ...editingEvent, agenda: v.split(',').map(a => a.trim()).filter(Boolean) })} textarea />
             <Field label="Image URL" value={editingEvent.image_url || ""} onChange={v => setEditingEvent({ ...editingEvent, image_url: v })} />
+            <Field label="Conference Brochure URL" value={editingEvent.brochure_url || ""} onChange={v => setEditingEvent({ ...editingEvent, brochure_url: v })} />
+            <Field label="Photo Gallery URL" value={editingEvent.gallery_url || ""} onChange={v => setEditingEvent({ ...editingEvent, gallery_url: v })} />
+            <Field label="Conference Report URL" value={editingEvent.report_url || ""} onChange={v => setEditingEvent({ ...editingEvent, report_url: v })} />
             <Field label="Registration URL" value={editingEvent.registration_url || ""} onChange={v => setEditingEvent({ ...editingEvent, registration_url: v })} />
             <div className="grid grid-cols-2 gap-4">
               <Field label="Sort Order" value={String(editingEvent.sort_order || 0)} onChange={v => setEditingEvent({ ...editingEvent, sort_order: Number(v || 0) })} />
@@ -489,7 +492,7 @@ function EventsTab() {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-white">Events CMS</h1>
-        <button onClick={() => setEditingEvent({ title: '', date: '', location: '', type: 'Conference', description: '', speakers: [], agenda: [], image_url: '', registration_url: '', is_featured: true, sort_order: events.length * 10 + 10 })}
+        <button onClick={() => setEditingEvent({ title: '', date: '', location: '', type: 'Conference', description: '', speakers: [], agenda: [], image_url: '', brochure_url: '', gallery_url: '', report_url: '', registration_url: '', is_featured: true, sort_order: events.length * 10 + 10 })}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90"
           style={{ background: "#c9a84c", color: "#0d1b3e" }}>
           <Plus size={16} /> Add Event
@@ -506,7 +509,7 @@ function EventsTab() {
                   <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(201,168,76,0.15)", color: "#c9a84c" }}>{event.type}</span>
                 </div>
                 <p className="text-white/40 text-xs mt-1">{event.date} · {event.location}</p>
-                {event.registration_url && <p className="text-white/30 text-xs truncate">{event.registration_url}</p>}
+                <p className="text-white/30 text-xs truncate">{event.brochure_url || event.registration_url || event.gallery_url || event.report_url || "No event links yet"}</p>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => setEditingEvent(event)} className="p-2 rounded-lg text-white/50 hover:text-[#c9a84c] hover:bg-[#c9a84c]/10 transition-all border border-transparent hover:border-[#c9a84c]/30">

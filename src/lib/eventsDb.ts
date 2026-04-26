@@ -11,6 +11,9 @@ export interface EventItem {
   agenda: string[];
   image_url?: string;
   registration_url?: string;
+  brochure_url?: string;
+  gallery_url?: string;
+  report_url?: string;
   is_featured?: boolean;
   sort_order?: number;
   created_at?: string;
@@ -29,6 +32,9 @@ const defaultEvents: EventItem[] = [
     agenda: ["Inaugural conference sessions", "Public library themes", "Infographics and scientometrics discussions", "Technical presentations"],
     is_featured: true,
     sort_order: 10,
+    brochure_url: "",
+    gallery_url: "",
+    report_url: "",
   },
   {
     id: "evt-2",
@@ -41,6 +47,9 @@ const defaultEvents: EventItem[] = [
     agenda: ["Conference theme sessions", "Library technology trends", "Innovations in library technologies", "Technology-based library services"],
     is_featured: true,
     sort_order: 20,
+    brochure_url: "",
+    gallery_url: "",
+    report_url: "",
   },
   {
     id: "evt-3",
@@ -53,6 +62,9 @@ const defaultEvents: EventItem[] = [
     agenda: ["Distinguished keynote lecture", "Contemporary LIS issues", "Leadership and management perspectives", "Best-practice sharing"],
     is_featured: true,
     sort_order: 30,
+    brochure_url: "",
+    gallery_url: "",
+    report_url: "",
   },
 ];
 

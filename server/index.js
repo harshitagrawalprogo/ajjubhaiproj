@@ -43,6 +43,42 @@ const LIFE_CERTIFICATE_TEMPLATE_VERSION = 4;
 async function ensureMemberDocumentColumns() {
   await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_data_url TEXT`;
   await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_template_version INTEGER`;
+  await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS application_id TEXT`;
+  await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_draft_data_url TEXT`;
+  await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_editor_state JSONB`;
+  await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_submitted_at TIMESTAMPTZ`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_members_application_id ON members (application_id)`;
+  await sql`
+    UPDATE members
+    SET application_id = COALESCE(application_id, CONCAT('APP/', membership_number::text))
+    WHERE application_id IS NULL
+  `;
+}
+
+async function ensureEventLinkColumns() {
+  await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS brochure_url TEXT`;
+  await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS gallery_url TEXT`;
+  await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS report_url TEXT`;
+}
+
+function normalizeEditorState(value) {
+  const source = value && typeof value === "object" ? value : {};
+  const asNumber = (key, fallback) => {
+    const candidate = Number(source[key]);
+    return Number.isFinite(candidate) ? candidate : fallback;
+  };
+
+  return {
+    nameX: asNumber("nameX", 1167),
+    nameY: asNumber("nameY", 799),
+    nameFontSize: asNumber("nameFontSize", 53),
+    detailX: asNumber("detailX", 1167),
+    detailY: asNumber("detailY", 849),
+    detailFontSize: asNumber("detailFontSize", 50),
+    photoX: asNumber("photoX", 333),
+    photoY: asNumber("photoY", 999),
+    photoRadius: asNumber("photoRadius", 175),
+  };
 }
 
 function normalizeMember(row) {
@@ -51,6 +87,7 @@ function normalizeMember(row) {
     id: row.id,
     membership_id: row.membership_id,
     membership_number: Number(row.membership_number),
+    application_id: row.application_id || undefined,
     name: row.name,
     email: row.email,
     phone: row.phone,
@@ -65,8 +102,11 @@ function normalizeMember(row) {
     membership_tier: row.membership_tier,
     status: row.status,
     photo_data_url: row.photo_data_url || undefined,
+    certificate_draft_data_url: row.certificate_draft_data_url || undefined,
     certificate_data_url: row.certificate_data_url || undefined,
+    certificate_editor_state: row.certificate_editor_state ? normalizeEditorState(row.certificate_editor_state) : undefined,
     certificate_template_version: row.certificate_template_version ? Number(row.certificate_template_version) : undefined,
+    certificate_submitted_at: row.certificate_submitted_at || undefined,
     created_at: row.created_at,
     approved_at: row.approved_at || undefined,
     issue_date: row.issue_date || undefined,
@@ -98,6 +138,9 @@ function normalizeEvent(row) {
     agenda: normalizeJsonArray(row.agenda),
     image_url: row.image_url || "",
     registration_url: row.registration_url || "",
+    brochure_url: row.brochure_url || "",
+    gallery_url: row.gallery_url || "",
+    report_url: row.report_url || "",
     is_featured: Boolean(row.is_featured),
     sort_order: Number(row.sort_order || 0),
     created_at: row.created_at,
@@ -156,6 +199,10 @@ async function generateMembershipIdentity() {
     membershipNumber,
     membershipId: `LISA/${membershipNumber}`,
   };
+}
+
+function generateApplicationId(membershipNumber) {
+  return `APP/${membershipNumber}`;
 }
 
 app.get("/api/health", (_req, res) => {
@@ -255,13 +302,14 @@ app.post("/api/members/register", async (req, res) => {
     }
 
     const { membershipNumber, membershipId } = await generateMembershipIdentity();
+    const applicationId = generateApplicationId(membershipNumber);
     const passwordHash = await bcrypt.hash(String(req.body.password), 10);
-    const issueDate = new Date().toISOString();
 
     const rows = await sql`
       INSERT INTO members (
         membership_number,
         membership_id,
+        application_id,
         name,
         email,
         phone,
@@ -277,11 +325,13 @@ app.post("/api/members/register", async (req, res) => {
         membership_tier,
         status,
         photo_data_url,
-        issue_date,
-        approved_at
+        certificate_draft_data_url,
+        certificate_editor_state,
+        issue_date
       ) VALUES (
         ${membershipNumber},
         ${membershipId},
+        ${applicationId},
         ${String(req.body.name).trim()},
         ${email},
         ${phone},
@@ -295,10 +345,11 @@ app.post("/api/members/register", async (req, res) => {
         ${String(req.body.state).trim()},
         ${String(req.body.pincode).trim()},
         ${String(req.body.membership_tier).trim()},
-        ${"approved"},
+        ${"pending"},
         ${req.body.photo_data_url ? String(req.body.photo_data_url) : null},
-        ${issueDate},
-        ${issueDate}
+        ${req.body.certificate_draft_data_url ? String(req.body.certificate_draft_data_url) : null},
+        ${req.body.certificate_editor_state ? JSON.stringify(normalizeEditorState(req.body.certificate_editor_state)) : null}::jsonb,
+        ${new Date().toISOString()}
       )
       RETURNING *
     `;
@@ -324,7 +375,7 @@ app.post("/api/members/login", async (req, res) => {
 
     const rows = await sql`
       SELECT * FROM members
-      WHERE lower(email) = ${identifier.toLowerCase()} OR membership_id = ${identifier}
+      WHERE lower(email) = ${identifier.toLowerCase()} OR membership_id = ${identifier} OR application_id = ${identifier}
       LIMIT 1
     `;
 
@@ -336,10 +387,6 @@ app.post("/api/members/login", async (req, res) => {
     const valid = await bcrypt.compare(password, member.password_hash);
     if (!valid) {
       return res.status(401).json({ error: "Invalid login credentials." });
-    }
-
-    if (member.status !== "approved") {
-      return res.status(403).json({ error: `Membership is currently ${member.status}.` });
     }
 
     const normalized = publicMember(member);
@@ -373,6 +420,14 @@ app.put("/api/members/me/certificate", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Member access required." });
     }
 
+    const currentRows = await sql`SELECT status FROM members WHERE id = ${req.user.memberId} LIMIT 1`;
+    if (currentRows.length === 0) {
+      return res.status(404).json({ error: "Member not found." });
+    }
+    if (currentRows[0].status !== "approved") {
+      return res.status(403).json({ error: "Final certificate is available after admin approval." });
+    }
+
     const certificateDataUrl = String(req.body.certificate_data_url || "").trim();
     const templateVersion = Number(req.body.certificate_template_version);
 
@@ -403,6 +458,44 @@ app.put("/api/members/me/certificate", requireAuth, async (req, res) => {
     });
   } catch {
     res.status(500).json({ error: "Failed to save certificate." });
+  }
+});
+
+app.put("/api/members/me/certificate-draft", requireAuth, async (req, res) => {
+  try {
+    if (req.user?.role !== "member") {
+      return res.status(403).json({ error: "Member access required." });
+    }
+
+    const draftDataUrl = String(req.body.certificate_draft_data_url || "").trim();
+    const editorState = normalizeEditorState(req.body.certificate_editor_state);
+    const submitForReview = Boolean(req.body.submit_for_review);
+
+    if (!draftDataUrl.startsWith("data:image/png;base64,") && !draftDataUrl.startsWith("data:image/jpeg;base64,")) {
+      return res.status(400).json({ error: "A PNG or JPEG draft image is required." });
+    }
+
+    const submittedAt = submitForReview ? new Date().toISOString() : null;
+    const rows = await sql`
+      UPDATE members
+      SET
+        certificate_draft_data_url = ${draftDataUrl},
+        certificate_editor_state = ${JSON.stringify(editorState)}::jsonb,
+        certificate_submitted_at = COALESCE(${submittedAt}, certificate_submitted_at)
+      WHERE id = ${req.user.memberId}
+      RETURNING *
+    `;
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Member not found." });
+    }
+
+    res.json({
+      saved: true,
+      submitted_at: rows[0].certificate_submitted_at || undefined,
+    });
+  } catch {
+    res.status(500).json({ error: "Failed to save certificate draft." });
   }
 });
 
@@ -446,6 +539,9 @@ app.post("/api/admin/events", requireAdmin, async (req, res) => {
         agenda,
         image_url,
         registration_url,
+        brochure_url,
+        gallery_url,
+        report_url,
         is_featured,
         sort_order
       ) VALUES (
@@ -458,6 +554,9 @@ app.post("/api/admin/events", requireAdmin, async (req, res) => {
         ${JSON.stringify(normalizeJsonArray(req.body.agenda))}::jsonb,
         ${String(req.body.image_url || "").trim() || null},
         ${String(req.body.registration_url || "").trim() || null},
+        ${String(req.body.brochure_url || "").trim() || null},
+        ${String(req.body.gallery_url || "").trim() || null},
+        ${String(req.body.report_url || "").trim() || null},
         ${Boolean(req.body.is_featured)},
         ${Number(req.body.sort_order || 0)}
       )
@@ -490,6 +589,9 @@ app.put("/api/admin/events/:id", requireAdmin, async (req, res) => {
         agenda = ${JSON.stringify(normalizeJsonArray(req.body.agenda))}::jsonb,
         image_url = ${String(req.body.image_url || "").trim() || null},
         registration_url = ${String(req.body.registration_url || "").trim() || null},
+        brochure_url = ${String(req.body.brochure_url || "").trim() || null},
+        gallery_url = ${String(req.body.gallery_url || "").trim() || null},
+        report_url = ${String(req.body.report_url || "").trim() || null},
         is_featured = ${Boolean(req.body.is_featured)},
         sort_order = ${Number(req.body.sort_order || 0)},
         updated_at = NOW()
@@ -619,6 +721,7 @@ app.delete("/api/admin/members/:id", requireAdmin, async (req, res) => {
 });
 
 ensureMemberDocumentColumns()
+  .then(ensureEventLinkColumns)
   .then(() => {
     app.listen(port, () => {
       console.log(`LIS Academy API listening on http://localhost:${port}`);

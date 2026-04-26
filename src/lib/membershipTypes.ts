@@ -1,10 +1,23 @@
 export type MembershipTier = "student" | "professional" | "life" | "institutional";
 export type MemberStatus = "pending" | "approved" | "rejected";
 
+export interface LifeCertificateEditorState {
+  nameX: number;
+  nameY: number;
+  nameFontSize: number;
+  detailX: number;
+  detailY: number;
+  detailFontSize: number;
+  photoX: number;
+  photoY: number;
+  photoRadius: number;
+}
+
 export interface Member {
   id: string;
   membership_id: string;
   membership_number?: number;
+  application_id?: string;
   name: string;
   email: string;
   phone: string;
@@ -20,8 +33,11 @@ export interface Member {
   status: MemberStatus;
   photo_data_url?: string;
   photo_url?: string;
+  certificate_draft_data_url?: string;
   certificate_data_url?: string;
+  certificate_editor_state?: LifeCertificateEditorState;
   certificate_template_version?: number;
+  certificate_submitted_at?: string;
   created_at: string;
   approved_at?: string;
   issue_date?: string;

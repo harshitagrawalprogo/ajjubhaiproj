@@ -4,16 +4,18 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"npm:api:dev\" \"npm:dev:web\"",
+    "dev:web": "vite",
     "api": "node server/index.js",
     "api:dev": "node --watch server/index.js",
-    "dev:full": "concurrently \"npm:api:dev\" \"npm:dev\"",
+    "dev:full": "npm run dev",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "browserslist:update": "npx update-browserslist-db@latest"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
