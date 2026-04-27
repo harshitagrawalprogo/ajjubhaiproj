@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   membership_number BIGINT NOT NULL UNIQUE,
   membership_id TEXT NOT NULL UNIQUE,
+  application_id TEXT UNIQUE,
   name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
   phone TEXT NOT NULL UNIQUE,
@@ -19,20 +20,34 @@ CREATE TABLE IF NOT EXISTS members (
   state TEXT NOT NULL,
   pincode TEXT NOT NULL,
   membership_tier TEXT NOT NULL CHECK (membership_tier IN ('student', 'professional', 'life', 'institutional')),
-  status TEXT NOT NULL DEFAULT 'approved' CHECK (status IN ('pending', 'approved', 'rejected')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   photo_data_url TEXT,
+  certificate_draft_data_url TEXT,
+  certificate_editor_state JSONB,
   certificate_data_url TEXT,
   certificate_template_version INTEGER,
   issue_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  approved_at TIMESTAMPTZ
+  approved_at TIMESTAMPTZ,
+  certificate_submitted_at TIMESTAMPTZ
 );
 
+ALTER TABLE members ADD COLUMN IF NOT EXISTS application_id TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_draft_data_url TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_editor_state JSONB;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_data_url TEXT;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_template_version INTEGER;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_submitted_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS idx_members_created_at ON members (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_members_membership_id ON members (membership_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_members_application_id ON members (application_id);
+
+UPDATE members
+SET
+  application_id = COALESCE(application_id, CONCAT('APP/', membership_number::text)),
+  status = COALESCE(status, 'pending')
+WHERE application_id IS NULL OR status IS NULL;
 
 CREATE TABLE IF NOT EXISTS events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -45,11 +60,18 @@ CREATE TABLE IF NOT EXISTS events (
   agenda JSONB NOT NULL DEFAULT '[]'::jsonb,
   image_url TEXT,
   registration_url TEXT,
+  brochure_url TEXT,
+  gallery_url TEXT,
+  report_url TEXT,
   is_featured BOOLEAN NOT NULL DEFAULT FALSE,
   sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE events ADD COLUMN IF NOT EXISTS brochure_url TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS gallery_url TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS report_url TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_events_sort ON events (sort_order ASC, created_at DESC);
 

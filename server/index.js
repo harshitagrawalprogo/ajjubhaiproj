@@ -8,8 +8,16 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT || 8787);
-const adminUsername = process.env.ADMIN_USERNAME || "admin";
-const adminPassword = process.env.ADMIN_PASSWORD || "LISAdmin@2026";
+const adminUsername = String(process.env.ADMIN_USERNAME || "").trim();
+const adminPassword = String(process.env.ADMIN_PASSWORD || "");
+
+if (!adminUsername) {
+  throw new Error("ADMIN_USERNAME is not set. Configure a dedicated production admin username in the server environment.");
+}
+
+if (!adminPassword) {
+  throw new Error("ADMIN_PASSWORD is not set. Configure a strong production admin password in the server environment.");
+}
 
 app.use(express.json({ limit: "50mb" }));
 app.use((req, res, next) => {

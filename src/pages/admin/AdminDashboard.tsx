@@ -437,7 +437,43 @@ function EventsTab() {
 
   const handleSave = async () => {
     if (!editingEvent?.title) return alert("Title is required");
-    await saveEvent(editingEvent as any);
+    const payload: EventItem | Omit<EventItem, "id"> = editingEvent.id
+      ? {
+          id: editingEvent.id,
+          title: editingEvent.title || "",
+          date: editingEvent.date || "",
+          location: editingEvent.location || "",
+          type: editingEvent.type || "Conference",
+          description: editingEvent.description || "",
+          speakers: editingEvent.speakers || [],
+          agenda: editingEvent.agenda || [],
+          image_url: editingEvent.image_url || "",
+          registration_url: editingEvent.registration_url || "",
+          brochure_url: editingEvent.brochure_url || "",
+          gallery_url: editingEvent.gallery_url || "",
+          report_url: editingEvent.report_url || "",
+          is_featured: Boolean(editingEvent.is_featured),
+          sort_order: Number(editingEvent.sort_order || 0),
+          created_at: editingEvent.created_at,
+          updated_at: editingEvent.updated_at,
+        }
+      : {
+          title: editingEvent.title || "",
+          date: editingEvent.date || "",
+          location: editingEvent.location || "",
+          type: editingEvent.type || "Conference",
+          description: editingEvent.description || "",
+          speakers: editingEvent.speakers || [],
+          agenda: editingEvent.agenda || [],
+          image_url: editingEvent.image_url || "",
+          registration_url: editingEvent.registration_url || "",
+          brochure_url: editingEvent.brochure_url || "",
+          gallery_url: editingEvent.gallery_url || "",
+          report_url: editingEvent.report_url || "",
+          is_featured: Boolean(editingEvent.is_featured),
+          sort_order: Number(editingEvent.sort_order || 0),
+        };
+    await saveEvent(payload);
     setEditingEvent(null);
     load();
   };

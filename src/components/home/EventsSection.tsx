@@ -1,45 +1,23 @@
 import { motion, useInView } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { Calendar, MapPin, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchEvents, type EventItem } from "@/lib/eventsDb";
-
-const fallbackEvents = [
-  {
-    title: "1st LIS Academy Conference",
-    date: "December 21-23, 2017",
-    location: "Gandhi Bhavan, Kumara Park",
-    tag: "Conference",
-  },
-  {
-    title: "2nd LIS Academy Conference on Innovations in Libraries",
-    date: "June 6-8, 2019",
-    location: "Visvesvaraya Technological University, Belagavi",
-    tag: "Conference",
-  },
-  {
-    title: "LISA Distinguished Lecture Series",
-    date: "Launched November 14, 2020",
-    location: "Online and blended academic forums",
-    tag: "Lecture Series",
-  },
-  {
-    title: "Institutional Workshops and Seminars",
-    date: "Year-round",
-    location: "Higher education institutions across India",
-    tag: "Professional Development",
-  },
-];
 
 export default function EventsSection() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
-  const [events, setEvents] = useState<EventItem[]>(fallbackEvents as EventItem[]);
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchEvents().then((data) => {
       const featured = data.filter((event) => event.is_featured).slice(0, 4);
       setEvents(featured.length ? featured : data.slice(0, 4));
+    }).catch(() => {
+      setEvents([]);
+    }).finally(() => {
+      setLoading(false);
     });
   }, []);
 
@@ -65,37 +43,68 @@ export default function EventsSection() {
           </Button>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {loading ? (
+          <div className="rounded-[28px] border border-border bg-card p-8 text-sm text-muted-foreground">
+            Loading events...
+          </div>
+        ) : events.length === 0 ? (
+          <div className="rounded-[28px] border border-border bg-card p-8 text-sm text-muted-foreground">
+            No events have been published yet. Add featured events from the admin portal to show them here.
+          </div>
+        ) : (
+        <div className="grid gap-6 lg:grid-cols-2">
           {events.map((event, i) => (
             <motion.div
-              key={event.title}
+              key={event.id || event.title}
               initial={{ opacity: 0, y: 30 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="group p-6 rounded-xl bg-card border border-border hover-lift"
+              className="group overflow-hidden rounded-[28px] border border-border bg-card"
             >
-              <span className="inline-block px-3 py-1 rounded-full bg-accent text-accent-foreground text-xs font-medium mb-4">
-                {event.type || (event as any).tag}
-              </span>
-              <h3 className="font-serif text-lg font-semibold text-foreground mb-4 leading-snug">
-                {event.title}
-              </h3>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Calendar size={14} />
-                  <span>{event.date}</span>
+              <div className="grid md:grid-cols-[220px,1fr]">
+                <div className="bg-muted">
+                  <img
+                    src={event.image_url || "/logo.png"}
+                    alt={event.title}
+                    className="h-full min-h-[220px] w-full object-cover"
+                  />
                 </div>
-                <div className="flex items-center gap-2">
-                  <MapPin size={14} />
-                  <span>{event.location}</span>
+                <div className="p-6">
+                  <span className="inline-block rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground mb-4">
+                    {event.type}
+                  </span>
+                  <h3 className="font-serif text-xl font-semibold text-foreground mb-3 leading-snug">
+                    {event.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-5 line-clamp-3">{event.description}</p>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Calendar size={14} />
+                      <span>{event.date}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin size={14} />
+                      <span>{event.location}</span>
+                    </div>
+                  </div>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    {(event.brochure_url || event.registration_url) && (
+                      <a href={event.brochure_url || event.registration_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+                        Brochure <ExternalLink size={14} />
+                      </a>
+                    )}
+                    {event.gallery_url && (
+                      <a href={event.gallery_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+                        Gallery <ExternalLink size={14} />
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
-              <Button variant="link" className="mt-4 p-0 h-auto text-primary">
-                Explore <ArrowRight size={14} />
-              </Button>
             </motion.div>
           ))}
         </div>
+        )}
       </div>
     </section>
   );

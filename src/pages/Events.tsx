@@ -27,11 +27,16 @@ export default function Events() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [selectedEvent, setSelectedEvent] = useState(0);
   const [calMonth, setCalMonth] = useState(3);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchEvents().then((data) => {
       setEvents(data);
       if (data.length > 0) setSelectedEvent(0);
+    }).catch(() => {
+      setEvents([]);
+    }).finally(() => {
+      setLoading(false);
     });
   }, []);
 
@@ -103,7 +108,11 @@ export default function Events() {
             </div>
           </FadeIn>
 
-          {events.map((event, i) => (
+          {loading ? (
+            <div className="rounded-[42px] bg-[#f7f3f2] p-8 text-base text-slate-600">Loading events...</div>
+          ) : events.length === 0 ? (
+            <div className="rounded-[42px] bg-[#f7f3f2] p-8 text-base text-slate-600">No events have been published yet. Use the admin portal to add them.</div>
+          ) : events.map((event, i) => (
             <FadeIn key={event.id || event.title} delay={i * 0.05}>
               <div
                 className="rounded-[42px] bg-[#f7f3f2] p-4 md:p-6 transition-all hover:scale-[1.01] cursor-pointer"
