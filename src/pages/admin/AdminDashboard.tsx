@@ -274,13 +274,22 @@ function ContentTab() {
   const [data, setData] = useState(() => ({
     ...getDefaultSection("contact"),
     ...getDefaultSection("hero"),
+    donateHeadline: getDefaultSection("donate").headline || "",
+    donateIntro: getDefaultSection("donate").intro || "",
+    donateNote: getDefaultSection("donate").note || "",
   }));
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([getSection("contact"), getSection("hero")])
-      .then(([contact, hero]) => setData({ ...contact, ...hero }))
+    Promise.all([getSection("contact"), getSection("hero"), getSection("donate")])
+      .then(([contact, hero, donate]) => setData({
+        ...contact,
+        ...hero,
+        donateHeadline: donate.headline || "",
+        donateIntro: donate.intro || "",
+        donateNote: donate.note || "",
+      }))
       .finally(() => setLoading(false));
   }, []);
 
@@ -293,6 +302,11 @@ function ContentTab() {
     await setSection("hero", {
       headline: data.headline || "",
       subtitle: data.subtitle || "",
+    });
+    await setSection("donate", {
+      headline: data.donateHeadline || "",
+      intro: data.donateIntro || "",
+      note: data.donateNote || "",
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -311,6 +325,11 @@ function ContentTab() {
         <Section title="Hero Section">
           <Field label="Headline" value={data.headline || ""} onChange={v => setData(d => ({ ...d, headline: v }))} />
           <Field label="Subtitle" value={data.subtitle || ""} onChange={v => setData(d => ({ ...d, subtitle: v }))} textarea />
+        </Section>
+        <Section title="Donate Us Section">
+          <Field label="Donation Headline" value={data.donateHeadline || ""} onChange={v => setData(d => ({ ...d, donateHeadline: v }))} />
+          <Field label="Donation Intro" value={data.donateIntro || ""} onChange={v => setData(d => ({ ...d, donateIntro: v }))} textarea />
+          <Field label="Donation Note" value={data.donateNote || ""} onChange={v => setData(d => ({ ...d, donateNote: v }))} textarea />
         </Section>
         <button onClick={handleSave}
           className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:-translate-y-0.5"

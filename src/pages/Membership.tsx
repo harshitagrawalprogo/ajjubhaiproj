@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Award, CheckCircle, CreditCard, Download, ImagePlus, Lock, LogOut, Mail, Phone, Printer, Send, User, Building2, MapPin, SlidersHorizontal } from "lucide-react";
+import { Award, CheckCircle, CreditCard, Download, Heart, ImagePlus, Lock, LogOut, Mail, Phone, Printer, Send, User, Building2, MapPin, SlidersHorizontal } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
+import { Link } from "react-router-dom";
 import {
   DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE,
   LIFE_CERTIFICATE_TEMPLATE_VERSION,
@@ -115,6 +116,7 @@ export default function MembershipPage() {
   const [idCardFront, setIdCardFront] = useState<string | null>(null);
   const [idCardBack, setIdCardBack] = useState<string | null>(null);
   const [editorState, setEditorState] = useState<LifeCertificateEditorState>(DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE);
+  const [hasDownloadedFinalCertificate, setHasDownloadedFinalCertificate] = useState(false);
   const finalizingRef = useRef(false);
 
   useEffect(() => {
@@ -312,11 +314,14 @@ export default function MembershipPage() {
     setRegistrationPhotoPreview(undefined);
   };
 
-  const downloadImage = (url: string, filename: string) => {
+  const downloadImage = (url: string, filename: string, options?: { markDonationPrompt?: boolean }) => {
     const link = document.createElement("a");
     link.href = url;
     link.download = filename;
     link.click();
+    if (options?.markDonationPrompt) {
+      setHasDownloadedFinalCertificate(true);
+    }
   };
 
   const memberTitle = member?.status === "approved" ? "Approved Member" : member?.status === "rejected" ? "Rejected Application" : "Pending Review";
@@ -353,7 +358,6 @@ export default function MembershipPage() {
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <div className="font-semibold text-[#0d1b3e]">{tier.label}</div>
-                        <div className="text-sm text-[#c9a84c] font-medium">{tier.fee}</div>
                       </div>
                       {form.membership_tier === tier.value && <CheckCircle size={18} className="text-[#c9a84c]" />}
                     </div>
@@ -452,7 +456,7 @@ export default function MembershipPage() {
                     <div className="rounded-2xl border border-[#ead9a0] bg-[#fff9ed] px-4 py-4 flex items-center justify-between gap-4">
                       <div>
                         <div className="text-sm font-semibold text-[#0d1b3e]">Selected Membership</div>
-                        <div className="text-sm text-[#c9a84c] font-medium">{selectedTier?.label} • {selectedTier?.fee}</div>
+                        <div className="text-sm text-[#c9a84c] font-medium">{selectedTier?.label}</div>
                       </div>
                       <CheckCircle size={18} className="text-[#c9a84c]" />
                     </div>
@@ -503,6 +507,13 @@ export default function MembershipPage() {
                           </div>
                         </div>
 
+                        <DonatePrompt
+                          title={member.status === "approved" ? "Support LIS Academy" : "Membership Submitted"}
+                          description={member.status === "approved"
+                            ? "Your membership is active. A contribution to LIS Academy helps us keep training, research, and community initiatives moving."
+                            : "Your membership application has been created successfully. If you would like to support LIS Academy further, you can also contribute through the donation gateway."}
+                        />
+
                         {member.membership_tier === "life" && member.status !== "approved" && (
                           <>
                             <div className="rounded-3xl border border-slate-200 bg-white p-5">
@@ -548,10 +559,17 @@ export default function MembershipPage() {
                                   <h3 className="mb-4 flex items-center gap-2 font-semibold text-[#0d1b3e]"><Award size={18} className="text-[#c9a84c]" /> Final Membership Certificate</h3>
                                   <img src={certificateUrl} alt="Certificate" className="w-full rounded-2xl border border-slate-200 shadow-sm" />
                                   <div className="mt-4 flex flex-wrap gap-3">
-                                    <ActionButton onClick={() => downloadImage(certificateUrl, `certificate-${member.membership_id}.jpg`)} icon={<Download size={14} />} label="Download" />
+                                    <ActionButton onClick={() => downloadImage(certificateUrl, `certificate-${member.membership_id}.jpg`, { markDonationPrompt: true })} icon={<Download size={14} />} label="Download" />
                                     <ActionButton onClick={() => printImage(certificateUrl, "LIS Academy Certificate")} icon={<Printer size={14} />} label="Print" secondary />
                                   </div>
                                 </div>
+
+                                {(hasDownloadedFinalCertificate || certificateUrl) && (
+                                  <DonatePrompt
+                                    title="Please Donate Us"
+                                    description="After downloading your final certificate, you can also support LIS Academy through the donation gateway."
+                                  />
+                                )}
 
                                 {idCardFront && idCardBack && (
                                   <div className="rounded-3xl border border-slate-200 bg-white p-5">
@@ -730,6 +748,28 @@ function ActionButton({ onClick, icon, label, secondary = false }: { onClick: ()
       {icon}
       {label}
     </button>
+  );
+}
+
+function DonatePrompt({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="rounded-3xl border border-[#ead9a0] bg-[#fff9ed] p-5">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#c9a84c]">
+            <Heart size={16} /> {title}
+          </div>
+          <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">{description}</p>
+        </div>
+        <Link
+          to="/donate"
+          className="inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-[#0d1b3e] transition-all hover:-translate-y-0.5"
+          style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)" }}
+        >
+          Donate Us
+        </Link>
+      </div>
+    </div>
   );
 }
 

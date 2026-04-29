@@ -13,6 +13,7 @@ const navLinks = [
   { name: "Products", path: "/library-automation" },
   { name: "Community", path: "/community" },
   { name: "Membership", path: "/membership" },
+  { name: "Donate Us", path: "/donate" },
   { name: "Contact", path: "/contact" },
 ];
 

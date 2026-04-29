@@ -15,6 +15,7 @@ import Contact from "./pages/Contact.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import LibraryAutomation from "./pages/LibraryAutomation.tsx";
 import Membership from "./pages/Membership.tsx";
+import Donate from "./pages/Donate.tsx";
 import AdminLogin from "./pages/admin/AdminLogin.tsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import AdminMemberDetail from "./pages/admin/AdminMemberDetail.tsx";
@@ -48,6 +49,7 @@ const App = () => (
           <Route path="/contact" element={<Contact />} />
           <Route path="/library-automation" element={<LibraryAutomation />} />
           <Route path="/membership" element={<Membership />} />
+          <Route path="/donate" element={<Donate />} />
 
           {/* Admin routes (not linked from nav) */}
           <Route path="/admin" element={<AdminLogin />} />

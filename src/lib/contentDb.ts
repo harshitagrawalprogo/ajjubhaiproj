@@ -5,7 +5,8 @@ export type ContentSection =
   | "about"
   | "contact"
   | "social"
-  | "topbar";
+  | "topbar"
+  | "donate";
 
 export interface ContentItem {
   section: ContentSection;
@@ -27,6 +28,9 @@ const defaults: ContentItem[] = [
   { section: "social", key: "youtube", value: "https://youtube.com/@lisacademy" },
   { section: "social", key: "instagram", value: "https://instagram.com/lisacademy" },
   { section: "topbar", key: "tagline", value: "LEARN | INSPIRE | SERVE" },
+  { section: "donate", key: "headline", value: "Support LIS Academy" },
+  { section: "donate", key: "intro", value: "Your contribution helps LIS Academy expand professional development, research, and community initiatives for library and information science." },
+  { section: "donate", key: "note", value: "Contributions are accepted in multiples of Rs. 100. Please choose an amount and continue to the payment gateway." },
 ];
 
 const cache = new Map<string, Record<string, string>>();

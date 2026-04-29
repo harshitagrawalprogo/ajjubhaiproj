@@ -114,7 +114,10 @@ INSERT INTO site_content (section, key, value) VALUES
   ('social', 'linkedin', 'https://linkedin.com/company/lisacademy'),
   ('social', 'youtube', 'https://youtube.com/@lisacademy'),
   ('social', 'instagram', 'https://instagram.com/lisacademy'),
-  ('topbar', 'tagline', 'LEARN | INSPIRE | SERVE')
+  ('topbar', 'tagline', 'LEARN | INSPIRE | SERVE'),
+  ('donate', 'headline', 'Support LIS Academy'),
+  ('donate', 'intro', 'Your contribution helps LIS Academy expand professional development, research, and community initiatives for library and information science.'),
+  ('donate', 'note', 'Contributions are accepted in multiples of Rs. 100. Please choose an amount and continue to the payment gateway.')
 ON CONFLICT (section, key) DO NOTHING;
 
 INSERT INTO document_templates (template_key, label, template_url, field_map) VALUES
