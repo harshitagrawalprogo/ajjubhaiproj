@@ -2,7 +2,7 @@ import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import PageLayout from "@/components/PageLayout";
 import PageHeader from "@/components/PageHeader";
-import { Target, Eye, Lightbulb, Users, Award, BookOpen, Globe, Heart } from "lucide-react";
+import { Target, Eye, Lightbulb, Users, Award, BookOpen, Globe, Heart, Handshake } from "lucide-react";
 
 const timeline = [
   {
@@ -68,22 +68,22 @@ const values = [
   {
     icon: BookOpen,
     title: "Professional Growth",
-    text: "Programs and services designed to strengthen the knowledge, skills, and values of librarianship.",
+    text: "Avenues for professional growth ranging from entry-level finishing schools to advanced leadership programs.",
   },
   {
     icon: Globe,
     title: "Need-Based Services",
-    text: "Support tailored to different kinds of libraries and institutional contexts across the country.",
+    text: "Technology support, research consultancy, professional development, lecture series, career support, and digital divide initiatives.",
   },
   {
     icon: Users,
     title: "Collaboration",
-    text: "A working model built on workshops, consultation, partnerships, and professional exchange.",
+    text: "Active collaboration with academic institutions, professional associations, and government bodies.",
   },
   {
     icon: Heart,
     title: "Fair Practice",
-    text: "An emphasis on responsible, best-practice-oriented use of technology and professional standards.",
+    text: "Transparent, ethical, and unbiased professional activities guided by best and fair practices.",
   },
 ];
 
@@ -110,8 +110,8 @@ export default function About() {
     <PageLayout>
       <PageHeader
         tag="About Us"
-        title="Our Story and Purpose"
-        description="Official LIS Academy messaging adapted from the academy's public About and conference pages."
+        title="Our Story"
+        description="The LIS Academy is a professional Public Charitable Trust dedicated to advancing the Library and Information Science profession."
       />
 
       <section className={sectionDark}>
@@ -120,17 +120,17 @@ export default function About() {
             {
               icon: Target,
               title: "Mission",
-              text: "To spread the multidimensional utility and overall growth of librarianship through education, literature, research, publications, training, consultation, and collaboration.",
+              text: "To spread the multi-dimensional utility and overall growth of the profession of librarianship through education, literature, research, publications, outsourcing, training programs, consultation, and collaboration.",
             },
             {
               icon: Eye,
               title: "Vision",
-              text: "To become the best, active, and dynamic professional body by supporting LIS professionals with essential knowledge, skills, values, and innovative technology.",
+              text: "To contribute to the essential knowledge, skills, and values of librarianship and the information professions through innovative and cutting-edge technology.",
             },
             {
               icon: Lightbulb,
               title: "Purpose",
-              text: "To bridge LIS education and professional practice while helping libraries adopt state-of-the-art technology and better services.",
+              text: "To provide need-based services to libraries and support LIS professionals through continuous skill development and technological innovation.",
             },
           ].map((item, i) => (
             <FadeIn key={item.title} delay={i * 0.1}>
@@ -167,6 +167,21 @@ export default function About() {
               </FadeIn>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className={sectionDark}>
+        <div className="max-w-4xl mx-auto text-center">
+          <FadeIn>
+            <div className="mb-10">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase border border-[#c9a84c]/40 text-[#c9a84c] bg-[#c9a84c]/10 mb-4">Collaborations</span>
+              <Handshake style={{ color: "#c9a84c" }} className="mx-auto mb-4" size={34} />
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-white mb-4">Driving Innovation Together</h2>
+              <p className="text-white/60 text-lg leading-relaxed">
+                The LIS Academy actively collaborates with diverse stakeholders, including academic institutions, national and international professional associations, and government bodies, to drive innovation and professional growth in the library sector.
+              </p>
+            </div>
+          </FadeIn>
         </div>
       </section>
 

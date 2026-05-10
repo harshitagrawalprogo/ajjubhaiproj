@@ -22,7 +22,10 @@ const projects = [
 ];
 
 const collaborators = [
-  "IFLA", "OCLC", "British Library", "National Library of India", "CSIR-NISCPR", "UGC-INFLIBNET", "IIT Libraries Network", "DELNET",
+  "Academic Institutions",
+  "National Professional Associations",
+  "International Professional Associations",
+  "Government Bodies",
 ];
 
 function FadeIn({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -44,7 +47,7 @@ export default function Research() {
 
   return (
     <PageLayout>
-      <PageHeader tag="Research" title="Advancing Knowledge" description="Explore our research publications, ongoing projects, and global collaborations." />
+      <PageHeader tag="Research" title="Advancing Knowledge" description="Explore our research publications, ongoing projects, and professional collaborations." />
 
       {/* Publications */}
       <section className="section-padding bg-[#0d1b3e]">
@@ -132,7 +135,10 @@ export default function Research() {
               <Handshake style={{ color: "#c9a84c" }} size={20} />
               <span className="text-sm font-semibold tracking-widest uppercase" style={{ color: "#c9a84c" }}>Collaborations</span>
             </div>
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-white mb-10">Global Research Partners</h2>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-white mb-4">Collaborative Professional Network</h2>
+            <p className="text-white/55 text-lg max-w-3xl mx-auto leading-relaxed mb-10">
+              The LIS Academy actively collaborates with diverse stakeholders, including academic institutions, national and international professional associations, and government bodies, to drive innovation and professional growth in the library sector.
+            </p>
           </FadeIn>
           <FadeIn delay={0.2}>
             <div className="flex flex-wrap justify-center gap-4">

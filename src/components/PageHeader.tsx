@@ -58,14 +58,16 @@ export default function PageHeader({ tag, title, description, children }: Props)
 
       {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto text-center px-6">
-        <motion.span
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase border border-[#c9a84c]/40 text-[#c9a84c] bg-[#c9a84c]/10 mb-5"
-        >
-          {tag}
-        </motion.span>
+        {tag && (
+          <motion.span
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase border border-[#c9a84c]/40 text-[#c9a84c] bg-[#c9a84c]/10 mb-5"
+          >
+            {tag}
+          </motion.span>
+        )}
 
         <motion.h1
           initial={{ opacity: 0, y: 20 }}

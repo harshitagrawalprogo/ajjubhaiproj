@@ -1,9 +1,12 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
+import { Building2, Globe2, Landmark, Users } from "lucide-react";
 
-const partners = [
-  "Delhi University", "JNU", "IGNOU", "CSIR", "UGC",
-  "INFLIBNET", "RRRLF", "NASSCOM", "IIT Delhi", "NIT Rourkela",
+const collaborators = [
+  { icon: Building2, label: "LIS Professionals" },
+  { icon: Users, label: "Publishing Industry" },
+  { icon: Globe2, label: "Academic Community" },
+  { icon: Landmark, label: "Professional Associations" },
 ];
 
 export default function PartnersSection() {
@@ -18,12 +21,15 @@ export default function PartnersSection() {
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
         >
-          <span className="text-secondary text-sm font-semibold tracking-widest uppercase mb-3 block">
-            Trusted By
+          <span className="text-secondary font-serif text-3xl md:text-4xl lg:text-5xl font-bold mb-3 block">
+            Collaborations
           </span>
-          <h2 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-12">
-            Our Partners & Collaborators
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
+            Working With Diverse Stakeholders
           </h2>
+          <p className="text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-12">
+            The LIS Academy actively collaborates with diverse stakeholders, including academic institutions, national and international professional associations, and government bodies, to drive innovation and professional growth in the library sector.
+          </p>
         </motion.div>
 
         <motion.div
@@ -32,15 +38,16 @@ export default function PartnersSection() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="flex flex-wrap justify-center gap-6"
         >
-          {partners.map((partner, i) => (
+          {collaborators.map((partner, i) => (
             <motion.div
-              key={partner}
+              key={partner.label}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={inView ? { opacity: 1, scale: 1 } : {}}
               transition={{ duration: 0.4, delay: 0.1 + i * 0.05 }}
-              className="px-6 py-3 rounded-lg bg-card border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-secondary/30 transition-colors"
+              className="flex items-center gap-3 px-6 py-4 rounded-lg bg-card border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-secondary/30 transition-colors"
             >
-              {partner}
+              <partner.icon className="text-secondary" size={18} />
+              {partner.label}
             </motion.div>
           ))}
         </motion.div>

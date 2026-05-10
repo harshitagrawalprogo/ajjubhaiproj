@@ -1,8 +1,9 @@
-import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import { useRef, useState } from "react";
 import PageLayout from "@/components/PageLayout";
 import PageHeader from "@/components/PageHeader";
 import { Users, GraduationCap, BookOpen, Microscope, Quote, ArrowRight, UserPlus, MessageCircle, Star } from "lucide-react";
+import { MembershipContent } from "./Membership";
 
 const memberGroups = [
   { icon: GraduationCap, label: "Students", count: "2,000+", description: "LIS students from across India building their careers." },
@@ -35,6 +36,8 @@ function FadeIn({ children, delay = 0, className = "" }: { children: React.React
 }
 
 export default function Community() {
+  const [activeForm, setActiveForm] = useState<"member" | "volunteer" | null>(null);
+
   return (
     <PageLayout>
       <PageHeader tag="Community" title="Join Our Network" description="Connect with a thriving ecosystem of LIS professionals, researchers, and learners." />
@@ -50,16 +53,16 @@ export default function Community() {
           </FadeIn>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {memberGroups.map((group, i) => (
-              <FadeIn key={group.label} delay={i * 0.1}>
-                <div className="p-6 rounded-xl border border-white/10 bg-white/5 hover:-translate-y-1 transition-all duration-300 text-center h-full">
-                  <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-4" style={{ background: "rgba(201,168,76,0.15)" }}>
-                    <group.icon style={{ color: "#c9a84c" }} size={24} />
-                  </div>
-                  <div className="text-2xl font-serif font-bold text-white mb-1">{group.count}</div>
-                  <div className="text-sm font-semibold mb-2" style={{ color: "#c9a84c" }}>{group.label}</div>
-                  <p className="text-xs text-white/50">{group.description}</p>
-                </div>
-              </FadeIn>
+               <FadeIn key={group.label} delay={i * 0.1}>
+                 <div className="p-6 rounded-xl border border-white/10 bg-white/5 hover:-translate-y-1 transition-all duration-300 text-center h-full">
+                   <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-4" style={{ background: "rgba(201,168,76,0.15)" }}>
+                     <group.icon style={{ color: "#c9a84c" }} size={24} />
+                   </div>
+                   <div className="text-2xl font-serif font-bold text-white mb-1">{group.count}</div>
+                   <div className="text-sm font-semibold mb-2" style={{ color: "#c9a84c" }}>{group.label}</div>
+                   <p className="text-xs text-white/50">{group.description}</p>
+                 </div>
+               </FadeIn>
             ))}
           </div>
         </div>
@@ -85,16 +88,62 @@ export default function Community() {
               </FadeIn>
             ))}
           </div>
-          <FadeIn delay={0.4}>
-            <div className="text-center mt-12">
-              <button
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-[#0d1b3e] hover:-translate-y-0.5 transition-all duration-300 shadow-lg shadow-[#c9a84c]/20"
-                style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)" }}
-              >
-                Become a Member <ArrowRight size={16} />
-              </button>
+        </div>
+      </section>
+
+      {/* CTA Dynamic Section */}
+      <section className="section-padding pt-0" style={{ background: "#091529" }}>
+        <div className="max-w-6xl mx-auto">
+          <FadeIn>
+            <div className="rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 border border-white/10 relative overflow-hidden shadow-2xl" style={{ background: "linear-gradient(135deg, #0d1b3e, #1a3060)" }}>
+              <div className="absolute inset-0" style={{ background: "radial-gradient(circle at top right, rgba(201,168,76,0.1), transparent 50%)" }} />
+              <div className="relative text-center md:text-left">
+                <h2 className="font-serif text-3xl md:text-4xl font-bold text-white mb-2">Ready to Shape the Future of LIS?</h2>
+                <p className="text-white/60 text-lg">Join our growing ecosystem as a professional member or volunteer.</p>
+              </div>
+              <div className="relative flex flex-col sm:flex-row gap-4 w-full md:w-auto shrink-0">
+                <button
+                  onClick={() => setActiveForm("member")}
+                  className="px-8 py-4 rounded-xl font-semibold transition-all hover:-translate-y-0.5 border"
+                  style={{ 
+                    background: activeForm === "member" ? "linear-gradient(135deg, #f0d080, #c9a84c)" : "rgba(255,255,255,0.05)", 
+                    color: activeForm === "member" ? "#0d1b3e" : "white",
+                    borderColor: activeForm === "member" ? "transparent" : "rgba(255,255,255,0.1)"
+                  }}
+                >
+                  Become a Member
+                </button>
+                <button
+                  onClick={() => setActiveForm("volunteer")}
+                  className="px-8 py-4 rounded-xl font-semibold transition-all hover:-translate-y-0.5 border"
+                  style={{ 
+                    background: activeForm === "volunteer" ? "linear-gradient(135deg, #f0d080, #c9a84c)" : "rgba(255,255,255,0.05)", 
+                    color: activeForm === "volunteer" ? "#0d1b3e" : "white",
+                    borderColor: activeForm === "volunteer" ? "transparent" : "rgba(255,255,255,0.1)"
+                  }}
+                >
+                  Become a Volunteer
+                </button>
+              </div>
             </div>
           </FadeIn>
+          
+          <AnimatePresence mode="wait">
+            {activeForm && (
+              <motion.div
+                key={activeForm}
+                initial={{ opacity: 0, height: 0, y: 20 }}
+                animate={{ opacity: 1, height: "auto", y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -20 }}
+                className="mt-8 rounded-3xl overflow-hidden shadow-2xl"
+              >
+                <MembershipContent 
+                  initialTier={activeForm === "volunteer" ? "volunteer" : "life"} 
+                  autoScroll={true} 
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 

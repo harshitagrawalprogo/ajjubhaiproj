@@ -96,9 +96,9 @@ function buildPreviewPhotoUrl(file: File | null, onReady: (value?: string) => vo
   reader.readAsDataURL(file);
 }
 
-export default function MembershipPage() {
+export function MembershipContent({ initialTier = "life", autoScroll = false }: { initialTier?: MembershipTier; autoScroll?: boolean }) {
   const [activeTab, setActiveTab] = useState<"register" | "login" | "dashboard">("register");
-  const [form, setForm] = useState<RegistrationForm>(initialForm);
+  const [form, setForm] = useState<RegistrationForm>({ ...initialForm, membership_tier: initialTier });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [registrationPhotoPreview, setRegistrationPhotoPreview] = useState<string | undefined>(undefined);
   const [member, setMember] = useState<Member | null>(null);
@@ -118,6 +118,17 @@ export default function MembershipPage() {
   const [editorState, setEditorState] = useState<LifeCertificateEditorState>(DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE);
   const [hasDownloadedFinalCertificate, setHasDownloadedFinalCertificate] = useState(false);
   const finalizingRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setForm((f) => ({ ...f, membership_tier: initialTier }));
+  }, [initialTier]);
+
+  useEffect(() => {
+    if (autoScroll && containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [autoScroll]);
 
   useEffect(() => {
     getCurrentMember().then((current) => {
@@ -328,7 +339,7 @@ export default function MembershipPage() {
   const memberIdentifier = member?.status === "approved" ? member.membership_id : (member?.application_id || member?.membership_id || "-");
 
   return (
-    <PageLayout>
+    <div ref={containerRef}>
       <section className="relative overflow-hidden px-6 py-24" style={{ background: "linear-gradient(135deg, #050e24 0%, #0d1b3e 55%, #1a3060 100%)" }}>
         <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 70% 55% at 50% -5%, rgba(201,168,76,0.16) 0%, transparent 65%)" }} />
         <div className="relative max-w-5xl mx-auto text-center">
@@ -597,6 +608,14 @@ export default function MembershipPage() {
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+export default function MembershipPage() {
+  return (
+    <PageLayout>
+      <MembershipContent />
     </PageLayout>
   );
 }

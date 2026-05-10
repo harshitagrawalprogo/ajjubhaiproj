@@ -9,53 +9,64 @@ export default function AboutSection() {
 
   const values = [
     {
-      icon: Target,
-      title: "Mission",
-      text: "To spread the multidimensional utility and overall growth of librarianship through education, literature, research, publications, training, consultation, and collaboration.",
-    },
-    {
       icon: Eye,
       title: "Vision",
-      text: "To become an active and dynamic professional body supporting librarians with essential knowledge, skills, values, and innovative technology.",
+      text: "To contribute to the essential knowledge, skills, and values of librarianship and the information professions through innovative and cutting-edge technology.",
+      hexColor: "#c0392b",
+      hoverTextClass: "group-hover:text-[#c0392b]",
+    },
+    {
+      icon: Target,
+      title: "Mission",
+      text: "To spread the multi-dimensional utility and overall growth of librarianship through education, literature, research, publications, outsourcing, training programs, consultation, and collaboration.",
+      hexColor: "#e67e22",
+      hoverTextClass: "group-hover:text-[#e67e22]",
     },
     {
       icon: Lightbulb,
       title: "Purpose",
-      text: "To provide need-based services to libraries across the country and help bridge the gap between LIS education and professional practice.",
+      text: "To provide need-based services to libraries and support LIS professionals through continuous skill development and technological innovation.",
+      hexColor: "#27ae60",
+      hoverTextClass: "group-hover:text-[#27ae60]",
     },
   ];
 
   return (
     <section ref={ref} className="section-padding bg-background">
       <div className="max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7 }}
+          className="text-center mb-16"
+        >
+          <h2 className="font-serif text-5xl md:text-6xl font-bold text-foreground mb-4 leading-tight">
+            About LIS Academy
+          </h2>
+          <h3 className="text-2xl md:text-3xl font-medium text-secondary max-w-4xl mx-auto">
+            A Professional Platform for Libraries, Librarians, and Research Communities
+          </h3>
+        </motion.div>
+
+        <div className="grid lg:grid-cols-2 gap-16 items-start">
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.7 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
           >
-            <span className="text-secondary text-sm font-semibold tracking-widest uppercase mb-3 block">
-              About LIS Academy
-            </span>
-            <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6 leading-tight">
-              A Professional Platform for Libraries, Librarians, and Research Communities
-            </h2>
-            <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-              LIS Academy works for the development of the Library and Information Science profession and assists libraries with state-of-the-art technology as well as continuous skill development for librarians. Its public-facing work includes training, consultancy, publications, seminars, workshops, and research productivity support for higher education institutions.
-            </p>
-            <div className="flex gap-8 flex-wrap">
-              <div>
-                <div className="text-3xl font-serif font-bold text-foreground">Need-Based</div>
-                <div className="text-sm text-muted-foreground">Services for Libraries</div>
-              </div>
-              <div>
-                <div className="text-3xl font-serif font-bold text-foreground">Pan-India</div>
-                <div className="text-sm text-muted-foreground">Training and Consultancy Reach</div>
-              </div>
-              <div>
-                <div className="text-3xl font-serif font-bold text-foreground">Learn Inspire Serve</div>
-                <div className="text-sm text-muted-foreground">Core Identity and Practice</div>
-              </div>
+            <div className="text-muted-foreground text-lg leading-relaxed space-y-4">
+              <p>
+                LIS Academy, Bangalore, is a non-governmental organization established as a Charitable Trust under Section 4 of the Indian Trusts Act, 1882. Guided by its tagline “Learn Inspire Serve,” the Academy is committed to evolving into a leading, vibrant, and dynamic professional body in the field of Library and Information Science.
+              </p>
+              <p>
+                The Academy strives to empower professionals by equipping them with essential knowledge, advanced skills, and strong professional values in librarianship. It actively promotes the use of innovative, cutting-edge technologies and encourages the adoption of best practices, ethical standards, and progressive ideas within the profession.
+              </p>
+              <p>
+                LIS Academy is duly recognized for undertaking Corporate Social Responsibility (CSR) activities, holding Registration No. CSR00108081. It has been granted tax exemption under Section 12AA of the Income Tax Act, 1961, and is registered under NGO Darpan with the Government of India.
+              </p>
+              <p>
+                Further, the Academy holds FCRA Registration No. 094421841, issued by the Ministry of Home Affairs, Government of India, New Delhi, enabling it to receive financial assistance and contributions from foreign sources in compliance with applicable regulations.
+              </p>
             </div>
           </motion.div>
 
@@ -71,19 +82,74 @@ export default function AboutSection() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={inView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: 0.3 + i * 0.15 }}
-                className="flex gap-4 p-5 rounded-xl bg-card border border-border hover-lift"
+                className="flex gap-4 p-5 rounded-xl bg-card border border-border shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group"
               >
+                <div className="absolute top-0 left-0 w-full h-1 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out" style={{ backgroundColor: item.hexColor }}></div>
                 <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                  <item.icon className="text-primary" size={22} />
+                  <item.icon className={`transition-colors duration-300 ${item.hoverTextClass} text-primary`} size={22} />
                 </div>
                 <div>
-                  <h3 className="font-serif text-lg font-semibold text-foreground mb-1">{item.title}</h3>
+                  <h3 className={`font-serif text-lg font-semibold text-foreground mb-1 transition-colors duration-300 ${item.hoverTextClass}`}>{item.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{item.text}</p>
                 </div>
               </motion.div>
             ))}
           </motion.div>
         </div>
+
+        {/* New Tagline Explanation Section */}
+        <motion.div
+          id="tagline-section"
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, delay: 0.4 }}
+          className="mt-24 border-t border-border pt-16 scroll-mt-24"
+        >
+          <div className="text-center max-w-4xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-5xl font-serif font-bold text-foreground mb-6">
+              <span style={{ color: "#c0392b" }}>Learn</span>
+              <span className="text-muted-foreground mx-3 md:mx-4 font-light">|</span>
+              <span style={{ color: "#e67e22" }}>Inspire</span>
+              <span className="text-muted-foreground mx-3 md:mx-4 font-light">|</span>
+              <span style={{ color: "#27ae60" }}>Serve</span>
+            </h2>
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              The tagline “Learn | Inspire | Serve” of LIS Academy reflects the core philosophy and mission of professional growth, leadership, and social responsibility in the field of Library and Information Science.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
+            <div className="bg-card border border-border p-8 rounded-2xl hover-lift shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-full h-1 bg-[#c0392b] origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"></div>
+              <h3 className="text-2xl font-serif font-bold text-foreground mb-4 text-center group-hover:text-[#c0392b] transition-colors duration-300">Learn</h3>
+              <p className="text-sm text-muted-foreground text-center leading-relaxed">
+                Represents the continuous pursuit of knowledge, skills, innovation, and professional excellence. It emphasizes lifelong learning, research, training, and capacity building for library and information professionals.
+              </p>
+            </div>
+            
+            <div className="bg-card border border-border p-8 rounded-2xl hover-lift shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-full h-1 bg-[#e67e22] origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"></div>
+              <h3 className="text-2xl font-serif font-bold text-foreground mb-4 text-center group-hover:text-[#e67e22] transition-colors duration-300">Inspire</h3>
+              <p className="text-sm text-muted-foreground text-center leading-relaxed">
+                Signifies motivating individuals and institutions through visionary leadership, creativity, ethical practices, and the sharing of ideas that advance the profession and empower communities.
+              </p>
+            </div>
+            
+            <div className="bg-card border border-border p-8 rounded-2xl hover-lift shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-full h-1 bg-[#27ae60] origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out"></div>
+              <h3 className="text-2xl font-serif font-bold text-foreground mb-4 text-center group-hover:text-[#27ae60] transition-colors duration-300">Serve</h3>
+              <p className="text-sm text-muted-foreground text-center leading-relaxed">
+                Highlights commitment to society through meaningful information services, community engagement, knowledge dissemination, and the promotion of equitable access to information for all.
+              </p>
+            </div>
+          </div>
+
+          <div className="text-center max-w-4xl mx-auto bg-accent/30 p-8 rounded-2xl border border-border/50 shadow-inner">
+            <p className="text-foreground font-medium text-lg italic leading-relaxed">
+              Together, the tagline conveys the journey of a professional: to acquire knowledge, inspire others through wisdom and leadership, and ultimately serve society with dedication and integrity.
+            </p>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

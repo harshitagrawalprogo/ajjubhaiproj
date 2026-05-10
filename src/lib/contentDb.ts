@@ -6,7 +6,10 @@ export type ContentSection =
   | "contact"
   | "social"
   | "topbar"
-  | "donate";
+  | "donate"
+  | "programs"
+  | "research"
+  | "products";
 
 export interface ContentItem {
   section: ContentSection;

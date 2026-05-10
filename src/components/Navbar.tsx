@@ -1,18 +1,22 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navLinks = [
   { name: "Home", path: "/" },
-  { name: "About", path: "/about" },
-  { name: "Programs", path: "/programs" },
-  { name: "Research", path: "/research" },
+  { 
+    name: "About", 
+    path: "/about",
+    dropdown: [
+      { name: "Our Story", path: "/about" },
+      { name: "Our Governance", path: "/governance" }
+    ]
+  },
+  { name: "Program", path: "/research-support" },
   { name: "Events", path: "/events" },
-  { name: "Products", path: "/library-automation" },
   { name: "Community", path: "/community" },
-  { name: "Membership", path: "/membership" },
   { name: "Donate Us", path: "/donate" },
   { name: "Contact", path: "/contact" },
 ];
@@ -66,19 +70,56 @@ export default function Navbar({ topBarHeight = 0 }: NavbarProps) {
       <nav className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
         {/* Desktop nav links */}
         <div className="hidden lg:flex items-center gap-0.5">
-          {navLinks.map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                location.pathname === link.path
-                  ? "text-[#c9a84c] bg-white/10"
-                  : "text-white/80 hover:text-white hover:bg-white/10"
-              }`}
-            >
-              {link.name}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const isActive = location.pathname === link.path || link.dropdown?.some(sub => location.pathname === sub.path);
+            
+            return (
+              <div key={link.name} className="relative group">
+                {link.dropdown ? (
+                  <div className="relative">
+                    <Link
+                      to={link.path}
+                      className={`flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                        isActive
+                          ? "text-[#c9a84c] bg-white/10"
+                          : "text-white/80 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {link.name} <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-200" />
+                    </Link>
+                    <div className="absolute left-0 top-full pt-1 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200">
+                      <div className="bg-[#0d1b3e] border border-white/10 rounded-lg shadow-xl overflow-hidden w-48 flex flex-col py-1 mt-1">
+                        {link.dropdown.map((subLink) => (
+                          <Link
+                            key={subLink.name}
+                            to={subLink.path}
+                            className={`px-4 py-2 text-sm transition-colors ${
+                              location.pathname === subLink.path
+                                ? "text-[#c9a84c] bg-white/10"
+                                : "text-white/80 hover:text-[#c9a84c] hover:bg-white/5"
+                            }`}
+                          >
+                            {subLink.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <Link
+                    to={link.path}
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                      location.pathname === link.path
+                        ? "text-[#c9a84c] bg-white/10"
+                        : "text-white/80 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className="hidden lg:block">
@@ -118,17 +159,41 @@ export default function Navbar({ topBarHeight = 0 }: NavbarProps) {
           >
             <div className="px-6 py-4 space-y-1">
               {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className={`block px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
-                    location.pathname === link.path
-                      ? "text-[#c9a84c] bg-white/10"
-                      : "text-white/70 hover:text-white hover:bg-white/8"
-                  }`}
-                >
-                  {link.name}
-                </Link>
+                <div key={link.name}>
+                  {link.dropdown ? (
+                    <>
+                      <div className="px-3 py-2 text-sm font-semibold text-white/50 uppercase tracking-wider mt-1">
+                        {link.name}
+                      </div>
+                      <div className="space-y-1 pl-2 border-l-2 border-white/10 ml-3 mb-1">
+                        {link.dropdown.map((subLink) => (
+                          <Link
+                            key={subLink.name}
+                            to={subLink.path}
+                            className={`block px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                              location.pathname === subLink.path
+                                ? "text-[#c9a84c] bg-white/10"
+                                : "text-white/70 hover:text-white hover:bg-white/8"
+                            }`}
+                          >
+                            {subLink.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <Link
+                      to={link.path}
+                      className={`block px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
+                        location.pathname === link.path
+                          ? "text-[#c9a84c] bg-white/10"
+                          : "text-white/70 hover:text-white hover:bg-white/8"
+                      }`}
+                    >
+                      {link.name}
+                    </Link>
+                  )}
+                </div>
               ))}
               <div className="pt-3">
                 <Button

@@ -1,10 +1,11 @@
 import { motion, useInView } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 const stats = [
-  { value: 4, suffix: "+", label: "Major Service Verticals" },
-  { value: 3, suffix: "", label: "Core Promises: Learn, Inspire, Serve" },
-  { value: 2, suffix: "+", label: "Published Conference Milestones" },
+  { value: 10, suffix: "+", label: "Major Service Verticals" },
+  { value: 3, suffix: "", label: <>Core Promises:<br />Learn, Inspire, Serve</>, link: "#tagline-section" },
+  { value: 9, suffix: "+", label: "Published Conference Milestones", link: "/events" },
   { value: 100, suffix: "%", label: "Focused on LIS Profession Development" },
 ];
 
@@ -58,20 +59,42 @@ export default function StatsSection() {
         </motion.div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-          {stats.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 30 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: i * 0.15 }}
-              className="text-center"
-            >
-              <div className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-secondary mb-2">
-                <AnimatedCounter target={stat.value} suffix={stat.suffix} inView={inView} />
+          {stats.map((stat, i) => {
+            const innerContent = (
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.5, delay: i * 0.15 }}
+                className={`text-center ${stat.link ? "hover:scale-105 transition-transform" : ""}`}
+              >
+                <div className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-secondary mb-2 transition-colors">
+                  <AnimatedCounter target={stat.value} suffix={stat.suffix} inView={inView} />
+                </div>
+                <p className="text-primary-foreground/60 text-sm md:text-base">{stat.label}</p>
+              </motion.div>
+            );
+
+            if (stat.link) {
+              if (stat.link.startsWith('#')) {
+                return (
+                  <a key={stat.label} href={stat.link} className="block group cursor-pointer">
+                    {innerContent}
+                  </a>
+                );
+              }
+              return (
+                <Link key={stat.label} to={stat.link} className="block group cursor-pointer">
+                  {innerContent}
+                </Link>
+              );
+            }
+
+            return (
+              <div key={stat.label}>
+                {innerContent}
               </div>
-              <p className="text-primary-foreground/60 text-sm md:text-base">{stat.label}</p>
-            </motion.div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

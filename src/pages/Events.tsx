@@ -1,4 +1,4 @@
-﻿import { motion, useInView } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import PageLayout from "@/components/PageLayout";
 import PageHeader from "@/components/PageHeader";
@@ -43,8 +43,15 @@ export default function Events() {
   return (
     <PageLayout>
       <PageHeader
-        tag="Events"
-        title="Conferences, Lectures, and Institutional Sessions"
+        tag=""
+        title={
+          <>
+            Events
+            <span className="block mt-4 text-3xl md:text-4xl lg:text-5xl font-medium text-[#c9a84c]">
+              Conferences, Seminars and Special Lectures
+            </span>
+          </>
+        }
         description="This page now reflects LIS Academy's published conference history and recurring professional formats through admin-managed event entries."
       />
 

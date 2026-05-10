@@ -1,3 +1,5 @@
+import { useState, useCallback } from "react";
+import TopBar, { TOPBAR_HEIGHT } from "@/components/TopBar";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/home/HeroSection";
 import AboutSection from "@/components/home/AboutSection";
@@ -11,16 +13,22 @@ import NewsletterSection from "@/components/home/NewsletterSection";
 import Footer from "@/components/Footer";
 
 const Index = () => {
+  const [topBarHeight, setTopBarHeight] = useState(TOPBAR_HEIGHT);
+
+  const handleHeightChange = useCallback((h: number) => {
+    setTopBarHeight(h);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <TopBar onHeightChange={handleHeightChange} />
+      <Navbar topBarHeight={topBarHeight} />
       <main>
         <HeroSection />
         <AboutSection />
         <ProgramsSection />
         <StatsSection />
         <EventsSection />
-        <KnowledgeHubSection />
         <CommunitySection />
         <PartnersSection />
         <NewsletterSection />

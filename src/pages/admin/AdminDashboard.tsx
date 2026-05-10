@@ -14,7 +14,7 @@ import { fetchEvents, saveEvent, deleteEvent, type EventItem } from "@/lib/event
 import { fetchDocumentTemplates, saveDocumentTemplate, type DocumentTemplate } from "@/lib/documentTemplates";
 import type { Member } from "@/lib/supabase";
 
-type Tab = "dashboard" | "members" | "events" | "content" | "social" | "templates";
+type Tab = "dashboard" | "members" | "events" | "content" | "social" | "templates" | "programs_research";
 
 export default function AdminDashboard() {
   const { isAuthenticated, logout } = useAdminAuth();
@@ -32,6 +32,7 @@ export default function AdminDashboard() {
     { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
     { id: "members", label: "Members", Icon: Users },
     { id: "events", label: "Events CMS", Icon: CalendarDays },
+    { id: "programs_research", label: "Program & Research", Icon: Globe },
     { id: "content", label: "Site Content", Icon: Globe },
     { id: "social", label: "Social Links", Icon: Settings },
     { id: "templates", label: "Templates", Icon: Image },
@@ -106,6 +107,7 @@ export default function AdminDashboard() {
           {tab === "dashboard" && <DashboardTab />}
           {tab === "members" && <MembersTab />}
           {tab === "events" && <EventsTab />}
+          {tab === "programs_research" && <ProgramsResearchTab />}
           {tab === "content" && <ContentTab />}
           {tab === "social" && <SocialTab />}
           {tab === "templates" && <TemplatesTab />}
@@ -658,6 +660,70 @@ function TemplatesTab() {
           ))}
         </div>
       )}
+    </motion.div>
+  );
+}
+
+// ─────────── Programs & Research tab ────────────────────────────────────
+function ProgramsResearchTab() {
+  const [data, setData] = useState(() => ({
+    ...getDefaultSection("programs"),
+    ...getDefaultSection("research"),
+    ...getDefaultSection("products"),
+  }));
+  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([getSection("programs"), getSection("research"), getSection("products")])
+      .then(([programs, research, products]) => setData({
+        ...programs,
+        ...research,
+        ...products,
+      }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    await setSection("programs", {
+      programs_json: data.programs_json || "[]",
+    });
+    await setSection("research", {
+      publications_json: data.publications_json || "[]",
+      projects_json: data.projects_json || "[]",
+      collaborators_json: data.collaborators_json || "[]",
+    });
+    await setSection("products", {
+      products_json: data.products_json || "[]",
+    });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <h1 className="text-2xl font-bold text-white mb-8">Program & Research Content</h1>
+      <p className="text-white/40 text-sm mb-6">Manage the data arrays shown in the Research Support page. Use valid JSON format.</p>
+      {loading && <p className="text-white/40 text-sm mb-4">Loading saved content...</p>}
+      <div className="space-y-6">
+        <Section title="Programs">
+          <Field label="Programs JSON Array" value={data.programs_json || ""} onChange={v => setData(d => ({ ...d, programs_json: v }))} textarea />
+        </Section>
+        <Section title="Research">
+          <Field label="Publications JSON Array" value={data.publications_json || ""} onChange={v => setData(d => ({ ...d, publications_json: v }))} textarea />
+          <Field label="Projects JSON Array" value={data.projects_json || ""} onChange={v => setData(d => ({ ...d, projects_json: v }))} textarea />
+          <Field label="Collaborators JSON Array" value={data.collaborators_json || ""} onChange={v => setData(d => ({ ...d, collaborators_json: v }))} textarea />
+        </Section>
+        <Section title="Products">
+          <Field label="Products JSON Array" value={data.products_json || ""} onChange={v => setData(d => ({ ...d, products_json: v }))} textarea />
+        </Section>
+        <button onClick={handleSave}
+          className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:-translate-y-0.5"
+          style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)", color: "#0d1b3e" }}>
+          <Save size={16} />
+          {saved ? "Saved!" : "Save Content"}
+        </button>
+      </div>
     </motion.div>
   );
 }

@@ -6,14 +6,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect } from "react";
 import Index from "./pages/Index.tsx";
 import About from "./pages/About.tsx";
-import Programs from "./pages/Programs.tsx";
-import Research from "./pages/Research.tsx";
+import ResearchSupport from "./pages/ResearchSupport.tsx";
 import Events from "./pages/Events.tsx";
 import KnowledgeHub from "./pages/KnowledgeHub.tsx";
 import Community from "./pages/Community.tsx";
+import Governance from "./pages/Governance.tsx";
 import Contact from "./pages/Contact.tsx";
 import NotFound from "./pages/NotFound.tsx";
-import LibraryAutomation from "./pages/LibraryAutomation.tsx";
 import Membership from "./pages/Membership.tsx";
 import Donate from "./pages/Donate.tsx";
 import AdminLogin from "./pages/admin/AdminLogin.tsx";
@@ -41,13 +40,12 @@ const App = () => (
           {/* Public routes */}
           <Route path="/" element={<Index />} />
           <Route path="/about" element={<About />} />
-          <Route path="/programs" element={<Programs />} />
-          <Route path="/research" element={<Research />} />
+          <Route path="/governance" element={<Governance />} />
+          <Route path="/research-support" element={<ResearchSupport />} />
           <Route path="/events" element={<Events />} />
           <Route path="/knowledge" element={<KnowledgeHub />} />
           <Route path="/community" element={<Community />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/library-automation" element={<LibraryAutomation />} />
           <Route path="/membership" element={<Membership />} />
           <Route path="/donate" element={<Donate />} />
 

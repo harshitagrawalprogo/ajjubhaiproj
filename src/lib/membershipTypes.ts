@@ -1,4 +1,4 @@
-export type MembershipTier = "student" | "professional" | "life" | "institutional";
+export type MembershipTier = "student" | "professional" | "life" | "institutional" | "volunteer";
 export type MemberStatus = "pending" | "approved" | "rejected";
 
 export interface LifeCertificateEditorState {
@@ -56,6 +56,7 @@ export const MEMBERSHIP_TIERS: { value: MembershipTier; label: string; fee: stri
   { value: "professional", label: "Professional Member", fee: "Rs. 1,500 / year" },
   { value: "life", label: "Life Member", fee: "Rs. 10,000 one-time" },
   { value: "institutional", label: "Institutional Member", fee: "Rs. 5,000 / year" },
+  { value: "volunteer", label: "Volunteer", fee: "Free" },
 ];
 
 export const TIER_COLORS: Record<MembershipTier, string> = {
@@ -63,4 +64,5 @@ export const TIER_COLORS: Record<MembershipTier, string> = {
   professional: "#c9a84c",
   life: "#9333ea",
   institutional: "#16a34a",
+  volunteer: "#0ea5e9",
 };
