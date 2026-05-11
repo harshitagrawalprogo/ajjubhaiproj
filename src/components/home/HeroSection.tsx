@@ -1,35 +1,15 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import { fetchEvents } from "@/lib/eventsDb";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const defaultEventImages = [
-  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=2000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1558403194-611308249627?q=80&w=2000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1491975474562-1f4e30bc9468?q=80&w=2000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=2000&auto=format&fit=crop",
-];
+const carouselImages = Array.from(
+  { length: 20 },
+  (_, i) => `/carousel/274dcbd2821daddd00bfa14414712b25-${i}.jpg`,
+);
 
 export default function HeroSection() {
-  const [carouselImages, setCarouselImages] = useState<string[]>(defaultEventImages);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-
-  useEffect(() => {
-    fetchEvents().then((events) => {
-      const images = events
-        .map(e => e.image_url)
-        .filter((url): url is string => Boolean(url));
-      if (images.length > 0) {
-        const finalImages = [...images].slice(0, 5);
-        while (finalImages.length < 5) {
-          finalImages.push(defaultEventImages[finalImages.length % defaultEventImages.length]);
-        }
-        setCarouselImages(finalImages);
-      }
-    }).catch(console.error);
-  }, []);
 
   useEffect(() => {
     if (paused) return;
@@ -60,11 +40,13 @@ export default function HeroSection() {
           className="absolute inset-0 w-full h-full"
           style={{ zIndex: 0 }}
         >
-          <img
-            src={carouselImages[currentIndex]}
-            alt={`Slide ${currentIndex + 1}`}
-            className="w-full h-full object-cover"
-          />
+          <div className="absolute inset-0 p-4 md:p-8 lg:p-12">
+            <img
+              src={carouselImages[currentIndex]}
+              alt={`Slide ${currentIndex + 1}`}
+              className="w-full h-full object-contain"
+            />
+          </div>
           <div
             className="absolute inset-0"
             style={{ background: "linear-gradient(to bottom, rgba(5,14,36,0.3) 0%, rgba(5,14,36,0.6) 100%)" }}

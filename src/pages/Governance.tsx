@@ -84,11 +84,12 @@ const advisoryBoard = [
   {
     name: "Dr. Mahendra Jadhav",
     role: "Librarian, IIT Madras, Chennai",
-    photo: "/lisa-trustees/mahendra-jadhav.jpg",
+    photo: "/lisa-trustees/mahendra-jadhav.jpeg",
   },
   {
     name: "Dr. Bhojaraju Gunjal",
     role: "Head, Central Library, NIT Rourkela, Odisha",
+    photo: "/lisa-trustees/bhojaraju-gunjal.jpeg",
   },
   {
     name: "Dr. S. L. Sangam",

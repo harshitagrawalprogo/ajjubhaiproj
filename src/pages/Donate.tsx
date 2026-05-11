@@ -4,15 +4,27 @@ import PageLayout from "@/components/PageLayout";
 import PageHeader from "@/components/PageHeader";
 import { getSection } from "@/lib/contentDb";
 
+const defaultDonateContent = {
+  headline: "Support LIS Academy",
+  intro:
+    "Your contribution helps LIS Academy expand professional development, research, and community initiatives for library and information science.",
+  note: "Contributions are accepted in multiples of Rs. 500. Please choose an amount and continue to the payment gateway.",
+};
+
+const donationSupportDetails = [
+  'Supporting LIS Academy through donations helps strengthen the Library and Information Science profession by supporting skill development, research, technology training, scholarships, conferences, publications, and community outreach initiatives for LIS professionals and students across India. Your contribution helps promote continuous learning, digital inclusion, and professional empowerment in line with the Academy\'s mission of "Learn | Inspire | Serve."',
+  "LIS Academy is recognized for CSR activities (CSR Registration No. CSR00108081), enjoys tax benefits under Sections 12AA and 80G of the Income Tax Act, is registered under NGO Darpan, and holds FCRA Registration No. 094421841, enabling it to receive foreign contributions legally and transparently.",
+];
+
 export default function Donate() {
-  const [content, setContent] = useState({ headline: "Support LIS Academy", intro: "", note: "" });
+  const [content, setContent] = useState(defaultDonateContent);
 
   useEffect(() => {
     getSection("donate").then((data) => {
       setContent({
-        headline: data.headline || "Support LIS Academy",
-        intro: data.intro || "",
-        note: data.note || "",
+        headline: data.headline || defaultDonateContent.headline,
+        intro: data.intro || defaultDonateContent.intro,
+        note: data.note || defaultDonateContent.note,
       });
     });
   }, []);
@@ -39,8 +51,17 @@ export default function Donate() {
               <div className="inline-flex items-center gap-2 rounded-full bg-[#c9a84c]/15 px-4 py-2 text-sm font-semibold text-[#f0d080]">
                 <Heart size={16} /> Support the mission
               </div>
-              <h2 className="mt-6 font-serif text-3xl text-white">{content.headline}</h2>
-              <p className="mt-4 text-base leading-8 text-white/70">{content.intro}</p>
+              <h2 className="mt-6 font-serif text-3xl text-white">
+                {content.headline}
+              </h2>
+              <p className="mt-4 text-base leading-8 text-white/70">
+                {content.intro}
+              </p>
+              <div className="mt-5 space-y-4 text-base leading-8 text-white/70">
+                {donationSupportDetails.map((detail) => (
+                  <p key={detail}>{detail}</p>
+                ))}
+              </div>
               <div className="mt-6 rounded-3xl border border-white/10 bg-[#091529] p-6 text-white/70">
                 <p>{content.note}</p>
               </div>
