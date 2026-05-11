@@ -730,10 +730,19 @@ app.delete("/api/admin/members/:id", requireAdmin, async (req, res) => {
 
 ensureMemberDocumentColumns()
   .then(ensureEventLinkColumns)
-  .then(() => {
     app.listen(port, () => {
       console.log(`LIS Academy API listening on http://localhost:${port}`);
       console.log(`Life certificate template version: ${LIFE_CERTIFICATE_TEMPLATE_VERSION}`);
+      
+      // Keep-alive ping to prevent Neon DB from cold-starting (suspending)
+      setInterval(async () => {
+        try {
+          await sql`SELECT 1`;
+          console.log("[db] Keep-alive ping successful.");
+        } catch (err) {
+          console.error("[db] Keep-alive ping failed:", err.message);
+        }
+      }, 4 * 60 * 1000); // every 4 minutes
     });
   })
   .catch((error) => {
