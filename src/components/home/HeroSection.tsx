@@ -20,7 +20,9 @@ export default function HeroSection() {
   }, [carouselImages.length, paused]);
 
   const navigate = (delta: number) => {
-    setCurrentIndex((prev) => (prev + delta + carouselImages.length) % carouselImages.length);
+    setCurrentIndex(
+      (prev) => (prev + delta + carouselImages.length) % carouselImages.length,
+    );
   };
 
   return (
@@ -40,16 +42,17 @@ export default function HeroSection() {
           className="absolute inset-0 w-full h-full"
           style={{ zIndex: 0 }}
         >
-          <div className="absolute inset-0 p-4 md:p-8 lg:p-12">
-            <img
-              src={carouselImages[currentIndex]}
-              alt={`Slide ${currentIndex + 1}`}
-              className="w-full h-full object-contain"
-            />
-          </div>
+          <img
+            src={carouselImages[currentIndex]}
+            alt={`Slide ${currentIndex + 1}`}
+            className="w-full h-full object-cover"
+          />
           <div
             className="absolute inset-0"
-            style={{ background: "linear-gradient(to bottom, rgba(5,14,36,0.3) 0%, rgba(5,14,36,0.6) 100%)" }}
+            style={{
+              background:
+                "linear-gradient(to bottom, rgba(5,14,36,0.3) 0%, rgba(5,14,36,0.6) 100%)",
+            }}
           />
         </motion.div>
       </AnimatePresence>
@@ -93,10 +96,12 @@ export default function HeroSection() {
             style={{
               width: i === currentIndex ? 32 : 8,
               height: 8,
-              background: i === currentIndex
-                ? "linear-gradient(90deg, #c9a84c, #f0d080)"
-                : "rgba(255,255,255,0.3)",
-              boxShadow: i === currentIndex ? "0 0 8px rgba(201,168,76,0.6)" : "none",
+              background:
+                i === currentIndex
+                  ? "linear-gradient(90deg, #c9a84c, #f0d080)"
+                  : "rgba(255,255,255,0.3)",
+              boxShadow:
+                i === currentIndex ? "0 0 8px rgba(201,168,76,0.6)" : "none",
             }}
           />
         ))}
