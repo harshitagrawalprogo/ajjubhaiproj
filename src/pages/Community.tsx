@@ -40,7 +40,18 @@ export default function Community() {
 
   return (
     <PageLayout>
-      <PageHeader tag="Community" title="Join Our Network" description="Connect with a thriving ecosystem of LIS professionals, researchers, and learners." />
+      <PageHeader 
+        tag="" 
+        title={
+          <>
+            Community
+            <span className="block mt-4 text-3xl md:text-4xl lg:text-5xl font-medium text-[#c9a84c]">
+              Join Our Network
+            </span>
+          </>
+        } 
+        description="Connect with a thriving ecosystem of LIS professionals, researchers, and learners." 
+      />
 
       {/* Member Groups */}
       <section className="section-padding bg-[#0d1b3e]">
@@ -92,13 +103,13 @@ export default function Community() {
       </section>
 
       {/* CTA Dynamic Section */}
-      <section className="section-padding pt-0" style={{ background: "#091529" }}>
+      <section id="join" className="section-padding pt-0" style={{ background: "#091529" }}>
         <div className="max-w-6xl mx-auto">
           <FadeIn>
             <div className="rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 border border-white/10 relative overflow-hidden shadow-2xl" style={{ background: "linear-gradient(135deg, #0d1b3e, #1a3060)" }}>
               <div className="absolute inset-0" style={{ background: "radial-gradient(circle at top right, rgba(201,168,76,0.1), transparent 50%)" }} />
               <div className="relative text-center md:text-left">
-                <h2 className="font-serif text-3xl md:text-4xl font-bold text-white mb-2">Ready to Shape the Future of LIS?</h2>
+                <h2 className="font-serif text-3xl md:text-4xl font-bold text-white mb-2">Ready to Shape the Future of LIS Profession?</h2>
                 <p className="text-white/60 text-lg">Join our growing ecosystem as a professional member or volunteer.</p>
               </div>
               <div className="relative flex flex-col sm:flex-row gap-4 w-full md:w-auto shrink-0">

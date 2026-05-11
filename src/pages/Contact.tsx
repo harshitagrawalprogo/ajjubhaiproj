@@ -1,4 +1,4 @@
-import { motion, useInView } from "framer-motion";
+﻿import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
 import PageLayout from "@/components/PageLayout";
 import PageHeader from "@/components/PageHeader";
@@ -14,10 +14,10 @@ const contactSchema = z.object({
 });
 
 const contactInfo = [
-  { icon: MapPin, label: "Address", value: "7/29, Vijayalakshmi Complex, 1st Main Road, 1st Phase, 2nd Stage, Gokul, Bengaluru – 560054" },
-  { icon: Mail, label: "Email", value: "info@lisacademy.org" },
-  { icon: Phone, label: "Phone", value: "080-35006965" },
-  { icon: Clock, label: "Hours", value: "Mon–Fri: 9:00 AM – 6:00 PM IST" },
+  { icon: MapPin, label: "Address", value: "7/29, Vijayalakshmi Complex, 1st Main Road, 1st Phase, 2nd Stage, Gokul, Bengaluru â€“ 560054" },
+  { icon: Mail, label: "Email", value: "lisacademyorg@gmail.com" },
+  { icon: Phone, label: "Phone", value: "+91 9449679737" },
+  { icon: Clock, label: "Hours", value: "Monâ€“Fri: 9:00 AM â€“ 6:00 PM IST" },
 ];
 
 function FadeIn({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -85,7 +85,7 @@ export default function Contact() {
 
                 {/* Map placeholder */}
                 <div className="mt-10 rounded-xl h-48 flex items-center justify-center" style={{ border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)" }}>
-                  <span className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>📍 Bengaluru, Karnataka, India</span>
+                  <span className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>ðŸ“ Bengaluru, Karnataka, India</span>
                 </div>
               </FadeIn>
             </div>
@@ -169,3 +169,5 @@ export default function Contact() {
     </PageLayout>
   );
 }
+
+

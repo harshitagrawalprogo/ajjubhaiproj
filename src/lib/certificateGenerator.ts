@@ -1,4 +1,4 @@
-import type { Member } from './supabase';
+﻿import type { Member } from './supabase';
 import type { LifeCertificateEditorState } from './membershipTypes';
 import { TIER_COLORS } from './membershipDb';
 import { fetchDocumentTemplates, type DocumentTemplate } from './documentTemplates';
@@ -23,9 +23,9 @@ export const DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE: LifeCertificateEditorState =
 let _cachedTemplateImage: HTMLImageElement | null = null;
 const _templateImageCache = new Map<string, HTMLImageElement>();
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  Helpers
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -223,40 +223,40 @@ async function generateLifeMembershipCertificate(member: Member): Promise<string
     _cachedTemplateImage = await loadImage(LIFE_CERTIFICATE_TEMPLATE_URL);
   }
   const background = _cachedTemplateImage;
-  // Canvas is exactly 2000 × 1414 px
+  // Canvas is exactly 2000 Ã— 1414 px
   const W = background.width;   // 2000
   const H = background.height;  // 1414
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d')!;
   ctx.drawImage(background, 0, 0, W, H);
 
-  // ── Positions scaled from the reference HTML (canvas 1200×850 → 2000×1414)
+  // â”€â”€ Positions scaled from the reference HTML (canvas 1200Ã—850 â†’ 2000Ã—1414)
   // Scale X = 2000/1200 = 1.6667  |  Scale Y = 1414/850 = 1.6635
   //
-  // REF POS (1200×850)           SCALED (2000×1414)
-  //  name        700, 480    →    1167, 799
-  //  detail      700, 510    →    1167, 849
-  //  membershipNo 915, 605   →    1525, 1007
-  //  issuedOnVal  750, 700   →    1250, 1165
-  //  photo        x=95,y=495,r=105 → cx=333,cy=999,r=175
+  // REF POS (1200Ã—850)           SCALED (2000Ã—1414)
+  //  name        700, 480    â†’    1167, 799
+  //  detail      700, 510    â†’    1167, 849
+  //  membershipNo 915, 605   â†’    1525, 1007
+  //  issuedOnVal  750, 700   â†’    1250, 1165
+  //  photo        x=95,y=495,r=105 â†’ cx=333,cy=999,r=175
 
   ctx.textAlign = 'center';
 
-  // ── Member name ──────────────────────────────────────────────────────
-  // ref: font 'bold 32px Georgia, serif' scaled → 53px
+  // â”€â”€ Member name â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ref: font 'bold 32px Georgia, serif' scaled â†’ 53px
   const rawName = member.name.trim().toUpperCase();
-  const name = rawName.length > 32 ? rawName.slice(0, 31) + '…' : rawName;
+  const name = rawName.length > 32 ? rawName.slice(0, 31) + 'â€¦' : rawName;
   ctx.fillStyle = '#1e2a8a';
   const nameSize = fitFont(ctx, name, 'Georgia, serif', 'bold', 880, 53, 32);
   ctx.font = `bold ${nameSize}px Georgia, serif`;
   ctx.fillText(name, 1167, 799);
 
-  // ── Designation / institution ─────────────────────────────────────────
-  // ref: font '30px Georgia, serif' scaled → 50px
+  // â”€â”€ Designation / institution â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ref: font '30px Georgia, serif' scaled â†’ 50px
   // Build detail: prefer custom_detail, fallback to designation + institution
   const rawDetail = member.custom_detail?.trim() ||
     [member.designation, member.institution].filter(Boolean).join(', ');
-  const detail = rawDetail.length > 60 ? rawDetail.slice(0, 59) + '…' : rawDetail;
+  const detail = rawDetail.length > 60 ? rawDetail.slice(0, 59) + 'â€¦' : rawDetail;
 
   if (detail) {
     drawCenteredTextBlock(ctx, detail, {
@@ -273,9 +273,9 @@ async function generateLifeMembershipCertificate(member: Member): Promise<string
     });
   }
 
-  // ── Membership number ─────────────────────────────────────────────────
-  // Template already prints "Membership No. LISA/" — draw ONLY the digits.
-  // ref: font 'bold 38px Georgia, serif' @ x=915 (center) scaled → 63px @ x=1525
+  // â”€â”€ Membership number â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Template already prints "Membership No. LISA/" â€” draw ONLY the digits.
+  // ref: font 'bold 38px Georgia, serif' @ x=915 (center) scaled â†’ 63px @ x=1525
   // We use textAlign='center' and position at 1525 so the number centres after "LISA/"
   const membershipNumber = getMembershipNumberText(member);
   ctx.fillStyle = '#1e2a8a';
@@ -284,16 +284,16 @@ async function generateLifeMembershipCertificate(member: Member): Promise<string
   ctx.textAlign = 'center';
   ctx.fillText(membershipNumber, 1525, 1007);
 
-  // ── Issue date ────────────────────────────────────────────────────────
-  // ref: font 'italic 24px Georgia, serif' @ (750,700) scaled → 40px @ (1250,1165)
+  // â”€â”€ Issue date â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ref: font 'italic 24px Georgia, serif' @ (750,700) scaled â†’ 40px @ (1250,1165)
   const issueDate = formatIssueDate(member);
   ctx.fillStyle = '#111111';
   ctx.font = 'italic bold 40px Georgia, serif';
   ctx.textAlign = 'center';
   ctx.fillText(issueDate, 1250, 1165);
 
-  // ── Member photo ──────────────────────────────────────────────────────
-  // ref: photo x=95, y=495, r=105  →  cx=333, cy=999, r=175
+  // â”€â”€ Member photo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ref: photo x=95, y=495, r=105  â†’  cx=333, cy=999, r=175
   const memberPhoto = member.photo_data_url || member.photo_url;
   if (memberPhoto) {
     try {
@@ -313,7 +313,7 @@ async function generateLifeMembershipCertificate(member: Member): Promise<string
     } catch { /* skip if photo fails to load */ }
   }
 
-  // Output JPEG at 87% quality — ~10x smaller than PNG, visually identical for certificates.
+  // Output JPEG at 87% quality â€” ~10x smaller than PNG, visually identical for certificates.
   return canvas.toDataURL('image/jpeg', 0.87);
 }
 
@@ -515,9 +515,9 @@ async function generateIdSideFromTemplate(member: Member, template: DocumentTemp
   return canvas.toDataURL('image/png');
 }
 
-// ─────────────────────────────────────────────────────────────
-//  MEMBERSHIP CERTIFICATE  (1122 × 794 px – A4 landscape @96dpi)
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  MEMBERSHIP CERTIFICATE  (1122 Ã— 794 px â€“ A4 landscape @96dpi)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function generateCertificate(
   member: Member,
   options?: { editorState?: Partial<LifeCertificateEditorState> | null },
@@ -550,7 +550,7 @@ export async function generateCertificate(
   const navy = '#0d1b3e';
   const gold = '#c9a84c';
 
-  // ── Background ──────────────────────────────────────────────
+  // â”€â”€ Background â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Cream-white base
   ctx.fillStyle = '#fdfaf5';
   ctx.fillRect(0, 0, W, H);
@@ -590,7 +590,7 @@ export async function generateCertificate(
   ctx.fillStyle = wGrad;
   ctx.fillRect(0, 0, W, H);
 
-  // ── Logo ────────────────────────────────────────────────────
+  // â”€â”€ Logo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   try {
     const logo = await loadImage('/logo.png');
     ctx.save();
@@ -608,7 +608,7 @@ export async function generateCertificate(
     ctx.stroke();
   } catch { /* logo failed to load */ }
 
-  // ── Header text ─────────────────────────────────────────────
+  // â”€â”€ Header text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ctx.fillStyle = navy;
   ctx.font = 'bold 13px "Inter", sans-serif';
   ctx.textAlign = 'center';
@@ -619,7 +619,7 @@ export async function generateCertificate(
   ctx.fillText('A PROFESSIONAL PUBLIC CHARITABLE TRUST', W / 2, 43);
   ctx.letterSpacing = '0px';
 
-  // ── "MEMBERSHIP CERTIFICATE" title ──────────────────────────
+  // â”€â”€ "MEMBERSHIP CERTIFICATE" title â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ctx.fillStyle = navy;
   ctx.font = 'bold 11px "Inter", sans-serif';
   ctx.letterSpacing = '4px';
@@ -643,7 +643,7 @@ export async function generateCertificate(
   ctx.fillRect(-4, -4, 8, 8);
   ctx.restore();
 
-  // ── Membership tier badge ────────────────────────────────────
+  // â”€â”€ Membership tier badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const tierLabel = member.membership_tier.charAt(0).toUpperCase() + member.membership_tier.slice(1) + ' Member';
   ctx.fillStyle = tierColor;
   const badgeW = 180;
@@ -655,7 +655,7 @@ export async function generateCertificate(
   ctx.fillText(tierLabel.toUpperCase(), W / 2, 212);
   ctx.letterSpacing = '0px';
 
-  // ── Main text ───────────────────────────────────────────────
+  // â”€â”€ Main text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ctx.fillStyle = '#555';
   ctx.font = '14px "Inter", sans-serif';
   ctx.fillText('This is to certify that', W / 2, 258);
@@ -679,7 +679,7 @@ export async function generateCertificate(
   // Designation + institution
   ctx.fillStyle = '#666';
   ctx.font = '13px "Inter", sans-serif';
-  const pos = [member.designation, member.institution].filter(Boolean).join(' — ');
+  const pos = [member.designation, member.institution].filter(Boolean).join(' â€” ');
   ctx.fillText(pos, W / 2, 334);
 
   // Body text
@@ -688,11 +688,11 @@ export async function generateCertificate(
   const bodyY = 364;
   wrapText(
     ctx,
-    'has been duly enrolled as a member of the LIS Academy — a Professional Public Charitable Trust committed to advancing the Library & Information Science profession through education, technology, and research.',
+    'has been duly enrolled as a member of the LIS Academy â€” a Professional Public Charitable Trust committed to advancing the Library & Information Science profession through education, technology, and research.',
     W / 2, bodyY, 720, 20
   );
 
-  // ── Membership ID ────────────────────────────────────────────
+  // â”€â”€ Membership ID â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ctx.fillStyle = '#f5f0e8';
   roundRect(ctx, W / 2 - 140, 436, 280, 44, 8);
   ctx.fill();
@@ -711,13 +711,13 @@ export async function generateCertificate(
   ctx.fillText(member.membership_id, W / 2, 470);
   ctx.letterSpacing = '0px';
 
-  // ── Valid from ───────────────────────────────────────────────
+  // â”€â”€ Valid from â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const joinDate = new Date(member.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
   ctx.fillStyle = '#888';
   ctx.font = '12px "Inter", sans-serif';
   ctx.fillText(`Issued on: ${new Date(member.issue_date || member.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`, W / 2, 502);
 
-  // ── Signature section ────────────────────────────────────────
+  // â”€â”€ Signature section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const sigY = 610;
   // Left: Chairman
   ctx.strokeStyle = navy;
@@ -748,7 +748,7 @@ export async function generateCertificate(
   ctx.font = '11px "Inter", sans-serif';
   ctx.fillText('LIS Academy', 862, sigY + 33);
 
-  // ── Official seal placeholder ────────────────────────────────
+  // â”€â”€ Official seal placeholder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ctx.strokeStyle = gold;
   ctx.lineWidth = 2;
   ctx.setLineDash([4, 4]);
@@ -767,19 +767,19 @@ export async function generateCertificate(
   ctx.fillText('SEAL', W / 2, sigY);
   ctx.letterSpacing = '0px';
 
-  // ── Footer bar text ──────────────────────────────────────────
+  // â”€â”€ Footer bar text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ctx.fillStyle = '#fff';
   ctx.font = '10px "Inter", sans-serif';
   ctx.letterSpacing = '1px';
-  ctx.fillText('info@lisacademy.org  |  080-35006965  |  www.lisacademy.org', W / 2, H - 20);
+  ctx.fillText('lisacademyorg@gmail.com  |  +91 9449679737  |  www.lisacademy.org', W / 2, H - 20);
   ctx.letterSpacing = '0px';
 
   return canvas.toDataURL('image/png');
 }
 
-// ─────────────────────────────────────────────────────────────
-//  MEMBERSHIP ID CARD  (638 × 402 px – CR80 credit card)
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  MEMBERSHIP ID CARD  (638 Ã— 402 px â€“ CR80 credit card)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function generateIdCard(member: Member): Promise<{ front: string; back: string }> {
   const [frontTemplate, backTemplate] = await Promise.all([getTemplate('id_front'), getTemplate('id_back')]);
   if (frontTemplate || backTemplate) {
@@ -797,7 +797,7 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   const W = 638, H = 402;
   const tierColor = TIER_COLORS[member.membership_tier] || '#c9a84c';
 
-  // ── FRONT ───────────────────────────────────────────────────
+  // â”€â”€ FRONT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const front = document.createElement('canvas');
   front.width = W;
   front.height = H;
@@ -826,7 +826,7 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   fc.fillStyle = tierColor;
   fc.fillRect(0, H - 5, W, 5);
 
-  // ── Logo (left side) ────────────────────────────────────────
+  // â”€â”€ Logo (left side) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   try {
     const logo = await loadImage('/logo.png');
     fc.save();
@@ -912,8 +912,8 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   infoY += 16;
   fc.fillStyle = 'rgba(255,255,255,0.8)';
   fc.font = '13px "Inter", sans-serif';
-  const designation = member.designation || '—';
-  fc.fillText(designation.length > 28 ? designation.slice(0, 28) + '…' : designation, infoX, infoY);
+  const designation = member.designation || 'â€”';
+  fc.fillText(designation.length > 28 ? designation.slice(0, 28) + 'â€¦' : designation, infoX, infoY);
   infoY += 22;
 
   fc.fillStyle = 'rgba(201,168,76,0.7)';
@@ -924,8 +924,8 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   infoY += 16;
   fc.fillStyle = 'rgba(255,255,255,0.8)';
   fc.font = '12px "Inter", sans-serif';
-  const inst = member.institution || '—';
-  fc.fillText(inst.length > 34 ? inst.slice(0, 34) + '…' : inst, infoX, infoY);
+  const inst = member.institution || 'â€”';
+  fc.fillText(inst.length > 34 ? inst.slice(0, 34) + 'â€¦' : inst, infoX, infoY);
 
   // Membership ID band
   fc.fillStyle = tierColor + '33';
@@ -965,9 +965,9 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   fc.fillStyle = 'rgba(255,255,255,0.35)';
   fc.font = '9px "Inter", sans-serif';
   fc.textAlign = 'center';
-  fc.fillText('info@lisacademy.org  |  080-35006965', W / 2, H - 14);
+  fc.fillText('lisacademyorg@gmail.com  |  +91 9449679737', W / 2, H - 14);
 
-  // ── BACK ────────────────────────────────────────────────────
+  // â”€â”€ BACK â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const back = document.createElement('canvas');
   back.width = W;
   back.height = H;
@@ -1014,9 +1014,9 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   const terms = [
     'This card is the property of LIS Academy and must be returned on demand.',
     'If found, please return to: 7/29, Vijayalakshmi Complex, 1st Main Road,',
-    'Gokul, Bengaluru – 560054',
+    'Gokul, Bengaluru â€“ 560054',
     '',
-    'Contact: info@lisacademy.org | 080-35006965',
+    'Contact: lisacademyorg@gmail.com | +91 9449679737',
   ];
   let ty = 200;
   terms.forEach(line => {
@@ -1030,7 +1030,7 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   bc.fillText('www.lisacademy.org', W / 2, H - 30);
   bc.fillStyle = 'rgba(255,255,255,0.3)';
   bc.font = '9px "Inter", sans-serif';
-  bc.fillText(member.membership_id + '  ·  Valid from ' + new Date(member.created_at).getFullYear(), W / 2, H - 14);
+  bc.fillText(member.membership_id + '  Â·  Valid from ' + new Date(member.created_at).getFullYear(), W / 2, H - 14);
 
   return {
     front: front.toDataURL('image/png'),
@@ -1038,9 +1038,9 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   };
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  Print helper
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function printImage(dataUrl: string, title = 'LIS Academy') {
   const win = window.open('', '_blank');
   if (!win) return;
@@ -1056,9 +1056,9 @@ export function printImage(dataUrl: string, title = 'LIS Academy') {
   win.document.close();
 }
 
-// ─────────────────────────────────────────────────────────────
-//  Utility – rounded rect (Canvas API helper)
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Utility â€“ rounded rect (Canvas API helper)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function roundRect(
   ctx: CanvasRenderingContext2D,
   x: number, y: number, w: number, h: number, r: number
@@ -1075,5 +1075,7 @@ function roundRect(
   ctx.quadraticCurveTo(x, y, x + r, y);
   ctx.closePath();
 }
+
+
 
 

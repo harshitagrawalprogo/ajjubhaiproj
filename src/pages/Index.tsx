@@ -11,6 +11,7 @@ import CommunitySection from "@/components/home/CommunitySection";
 import PartnersSection from "@/components/home/PartnersSection";
 import NewsletterSection from "@/components/home/NewsletterSection";
 import Footer from "@/components/Footer";
+import MarqueeStrip from "@/components/MarqueeStrip";
 
 const Index = () => {
   const [topBarHeight, setTopBarHeight] = useState(TOPBAR_HEIGHT);
@@ -23,7 +24,8 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <TopBar onHeightChange={handleHeightChange} />
       <Navbar topBarHeight={topBarHeight} />
-      <main>
+      <main style={{ paddingTop: 56 }}>
+        <MarqueeStrip />
         <HeroSection />
         <AboutSection />
         <ProgramsSection />

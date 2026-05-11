@@ -279,18 +279,22 @@ function ContentTab() {
     donateHeadline: getDefaultSection("donate").headline || "",
     donateIntro: getDefaultSection("donate").intro || "",
     donateNote: getDefaultSection("donate").note || "",
+    marqueeText: getDefaultSection("marquee").text || "",
+    marqueeEnabled: getDefaultSection("marquee").enabled || "true",
   }));
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([getSection("contact"), getSection("hero"), getSection("donate")])
-      .then(([contact, hero, donate]) => setData({
+    Promise.all([getSection("contact"), getSection("hero"), getSection("donate"), getSection("marquee")])
+      .then(([contact, hero, donate, marquee]) => setData({
         ...contact,
         ...hero,
         donateHeadline: donate.headline || "",
         donateIntro: donate.intro || "",
         donateNote: donate.note || "",
+        marqueeText: marquee.text || "",
+        marqueeEnabled: marquee.enabled || "true",
       }))
       .finally(() => setLoading(false));
   }, []);
@@ -310,6 +314,10 @@ function ContentTab() {
       intro: data.donateIntro || "",
       note: data.donateNote || "",
     });
+    await setSection("marquee", {
+      text: data.marqueeText || "",
+      enabled: data.marqueeEnabled || "true",
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -327,6 +335,27 @@ function ContentTab() {
         <Section title="Hero Section">
           <Field label="Headline" value={data.headline || ""} onChange={v => setData(d => ({ ...d, headline: v }))} />
           <Field label="Subtitle" value={data.subtitle || ""} onChange={v => setData(d => ({ ...d, subtitle: v }))} textarea />
+        </Section>
+        <Section title="Marquee / Breaking News Strip">
+          <p className="text-white/40 text-xs mb-3">This red strip scrolls above the hero carousel. Separate items with  &nbsp;<code className="text-[#c9a84c]">|</code>&nbsp;  for visual separation.</p>
+          <Field label="Marquee Text" value={data.marqueeText || ""} onChange={v => setData(d => ({ ...d, marqueeText: v }))} textarea />
+          <div className="flex items-center gap-3 mt-1">
+            <label className="text-white/40 text-xs uppercase tracking-wider">Strip Visible?</label>
+            <button
+              type="button"
+              onClick={() => setData(d => ({ ...d, marqueeEnabled: d.marqueeEnabled === "true" ? "false" : "true" }))}
+              className="relative w-10 h-5 rounded-full transition-all duration-300 flex-shrink-0"
+              style={{ background: data.marqueeEnabled === "true" ? "#dc2626" : "rgba(255,255,255,0.15)" }}
+            >
+              <span
+                className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-300"
+                style={{ left: data.marqueeEnabled === "true" ? "calc(100% - 18px)" : 2 }}
+              />
+            </button>
+            <span className="text-xs" style={{ color: data.marqueeEnabled === "true" ? "#f87171" : "rgba(255,255,255,0.3)" }}>
+              {data.marqueeEnabled === "true" ? "Enabled" : "Disabled"}
+            </span>
+          </div>
         </Section>
         <Section title="Donate Us Section">
           <Field label="Donation Headline" value={data.donateHeadline || ""} onChange={v => setData(d => ({ ...d, donateHeadline: v }))} />

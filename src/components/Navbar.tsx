@@ -6,19 +6,13 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const navLinks = [
   { name: "Home", path: "/" },
-  { 
-    name: "About", 
-    path: "/about",
-    dropdown: [
-      { name: "Our Story", path: "/about" },
-      { name: "Our Governance", path: "/governance" }
-    ]
-  },
+  { name: "Governance", path: "/governance" },
   { name: "Program", path: "/research-support" },
   { name: "Events", path: "/events" },
   { name: "Community", path: "/community" },
+  { name: "Blog", path: "/blog" },
+  { name: "LISATube", path: "/lisatube" },
   { name: "Donate Us", path: "/donate" },
-  { name: "Contact", path: "/contact" },
 ];
 
 interface NavbarProps {
@@ -68,7 +62,10 @@ export default function Navbar({ topBarHeight = 0 }: NavbarProps) {
       style={{ top: navTop }}
     >
       <nav className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
-        {/* Desktop nav links */}
+        {/* Left spacer (desktop) */}
+        <div className="hidden lg:flex flex-1" />
+
+        {/* Desktop nav links – centered */}
         <div className="hidden lg:flex items-center gap-0.5">
           {navLinks.map((link) => {
             const isActive = location.pathname === link.path || link.dropdown?.some(sub => location.pathname === sub.path);
@@ -122,14 +119,16 @@ export default function Navbar({ topBarHeight = 0 }: NavbarProps) {
           })}
         </div>
 
-        <div className="hidden lg:block">
-          <Button
-            size="sm"
-            className="rounded-lg font-semibold text-[#0d1b3e] hover:-translate-y-0.5 transition-all"
-            style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)" }}
-          >
-            Apply Now
-          </Button>
+        <div className="hidden lg:flex flex-1 justify-end">
+          <Link to="/membership">
+            <Button
+              size="sm"
+              className="rounded-lg font-semibold text-[#0d1b3e] hover:-translate-y-0.5 transition-all"
+              style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)" }}
+            >
+              Become a Member
+            </Button>
+          </Link>
         </div>
 
         {/* Mobile: logo + toggle */}
@@ -196,12 +195,14 @@ export default function Navbar({ topBarHeight = 0 }: NavbarProps) {
                 </div>
               ))}
               <div className="pt-3">
-                <Button
-                  className="w-full font-semibold text-[#0d1b3e]"
-                  style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)" }}
-                >
-                  Apply Now
-                </Button>
+                <Link to="/membership">
+                  <Button
+                    className="w-full font-semibold text-[#0d1b3e]"
+                    style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)" }}
+                  >
+                    Become a Member
+                  </Button>
+                </Link>
               </div>
             </div>
           </motion.div>

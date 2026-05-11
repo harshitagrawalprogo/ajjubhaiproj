@@ -1,4 +1,4 @@
-import { apiRequest, getAdminToken } from "./api";
+﻿import { apiRequest, getAdminToken } from "./api";
 
 export type ContentSection =
   | "hero"
@@ -9,7 +9,8 @@ export type ContentSection =
   | "donate"
   | "programs"
   | "research"
-  | "products";
+  | "products"
+  | "marquee";
 
 export interface ContentItem {
   section: ContentSection;
@@ -19,11 +20,13 @@ export interface ContentItem {
 }
 
 const defaults: ContentItem[] = [
+  { section: "marquee", key: "text", value: "ðŸ“… Upcoming: National LIS Conference 2026 â€” Registration Open Now! &nbsp;&nbsp;|&nbsp;&nbsp; ðŸŽ“ Workshop on Digital Library Management â€” June 15, Bengaluru &nbsp;&nbsp;|&nbsp;&nbsp; ðŸ“¢ New Batch of LIS Certification Program Starting July 2026 â€” Enroll Today!" },
+  { section: "marquee", key: "enabled", value: "true" },
   { section: "hero", key: "headline", value: "Learn. Inspire. Serve." },
   { section: "hero", key: "subtitle", value: "A professional Public Charitable Trust advancing the Library & Information Science profession through world-class training, technology implementation, and research across India." },
   { section: "about", key: "description", value: "LIS Academy is India's Premier Library & Information Science Platform." },
-  { section: "contact", key: "email", value: "info@lisacademy.org" },
-  { section: "contact", key: "phone", value: "080-35006965" },
+  { section: "contact", key: "email", value: "lisacademyorg@gmail.com" },
+  { section: "contact", key: "phone", value: "+91 9449679737" },
   { section: "contact", key: "address", value: "7/29, Vijayalakshmi Complex, 1st Main Road, Gokul, Bengaluru - 560054" },
   { section: "social", key: "facebook", value: "https://facebook.com/lisacademy" },
   { section: "social", key: "twitter", value: "https://twitter.com/lisacademy" },
@@ -90,3 +93,5 @@ export async function getContent(section: ContentSection, key: string): Promise<
   const data = await getSection(section);
   return data[key] || "";
 }
+
+
