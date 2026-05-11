@@ -34,7 +34,7 @@ export default function TopBar({ onHeightChange }: TopBarProps) {
         style={{ background: "#ffffff", borderBottom: "1px solid #e8e0d0" }}
       >
         <div
-          className="max-w-7xl mx-auto flex items-center justify-between px-6"
+          className="max-w-full w-full flex items-center justify-between px-4 md:px-6 flex-wrap"
           style={{ height: TOPBAR_HEIGHT }}
         >
           {/* ── Left: Logo + Brand ─────────────────────── */}
@@ -42,8 +42,8 @@ export default function TopBar({ onHeightChange }: TopBarProps) {
             <div
               className="flex items-center justify-center rounded-full border-2 overflow-hidden flex-shrink-0"
               style={{
-                width: 52,
-                height: 52,
+                width: 48,
+                height: 48,
                 borderColor: "#0d1b3e",
                 background: "#fff",
               }}

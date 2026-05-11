@@ -519,10 +519,21 @@ app.post("/api/admin/login", async (req, res) => {
   res.json({ token, admin: { username } });
 });
 
-app.get("/api/admin/members", requireAdmin, async (_req, res) => {
+app.get("/api/admin/members", requireAdmin, async (req, res) => {
   try {
-    const rows = await sql`SELECT * FROM members ORDER BY created_at DESC`;
-    res.json({ members: rows.map(publicMember) });
+    const page = Math.max(parseInt(String(req.query.page || "1"), 10), 1);
+    const limit = Math.min(parseInt(String(req.query.limit || "100"), 10), 1000);
+    const offset = (page - 1) * limit;
+    const rows = await sql`
+      SELECT * FROM members
+      ORDER BY created_at DESC
+      LIMIT ${limit}
+      OFFSET ${offset}
+    `;
+    // also return total count for client pagination UI
+    const totalResult = await sql`SELECT COUNT(*) FROM members`;
+    const total = Number(totalResult[0].count);
+    res.json({ members: rows.map(publicMember), total, page, limit });
   } catch {
     res.status(500).json({ error: "Failed to load members." });
   }
@@ -730,6 +741,7 @@ app.delete("/api/admin/members/:id", requireAdmin, async (req, res) => {
 
 ensureMemberDocumentColumns()
   .then(ensureEventLinkColumns)
+  .then(() => {
     app.listen(port, () => {
       console.log(`LIS Academy API listening on http://localhost:${port}`);
       console.log(`Life certificate template version: ${LIFE_CERTIFICATE_TEMPLATE_VERSION}`);

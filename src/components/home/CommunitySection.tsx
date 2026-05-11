@@ -46,10 +46,10 @@ export default function CommunitySection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <span className="text-secondary font-serif text-3xl md:text-4xl lg:text-5xl font-bold mb-3 block">
+          <span className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3 block">
             Our Community
           </span>
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-secondary mb-4">
             Built for a Shared Professional Community
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">

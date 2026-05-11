@@ -21,10 +21,10 @@ export default function PartnersSection() {
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
         >
-          <span className="text-secondary font-serif text-3xl md:text-4xl lg:text-5xl font-bold mb-3 block">
+          <span className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3 block">
             Collaborations
           </span>
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-secondary mb-4">
             Working With Diverse Stakeholders
           </h2>
           <p className="text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-12">
