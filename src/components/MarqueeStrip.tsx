@@ -2,7 +2,14 @@ import { useEffect, useState, useRef } from "react";
 import { getSection } from "@/lib/contentDb";
 import { AlertCircle } from "lucide-react";
 
-export default function MarqueeStrip() {
+export const MARQUEE_HEIGHT = 36;
+
+interface MarqueeStripProps {
+  fixed?: boolean;
+  onHeightChange?: (height: number) => void;
+}
+
+export default function MarqueeStrip({ fixed = false, onHeightChange }: MarqueeStripProps) {
   const [text, setText] = useState("");
   const [enabled, setEnabled] = useState(true);
   const [paused, setPaused] = useState(false);
@@ -15,6 +22,10 @@ export default function MarqueeStrip() {
     }).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    onHeightChange?.(enabled && text ? MARQUEE_HEIGHT : 0);
+  }, [enabled, onHeightChange, text]);
+
   if (!enabled || !text) return null;
 
   // Duplicate the text so the marquee loops seamlessly
@@ -22,10 +33,10 @@ export default function MarqueeStrip() {
 
   return (
     <div
-      className="relative z-10 overflow-hidden select-none"
+      className={`${fixed ? "fixed left-0 right-0 top-0 z-[60]" : "relative z-10"} overflow-hidden select-none`}
       style={{
         background: "linear-gradient(90deg, #b91c1c 0%, #dc2626 40%, #b91c1c 100%)",
-        height: 36,
+        height: MARQUEE_HEIGHT,
         display: "flex",
         alignItems: "center",
         borderBottom: "1px solid rgba(255,255,255,0.15)",

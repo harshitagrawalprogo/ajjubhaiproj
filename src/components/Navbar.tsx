@@ -17,9 +17,10 @@ const navLinks = [
 
 interface NavbarProps {
   topBarHeight?: number;
+  topOffset?: number;
 }
 
-export default function Navbar({ topBarHeight = 0 }: NavbarProps) {
+export default function Navbar({ topBarHeight = 0, topOffset = 0 }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrollPos, setScrollPos] = useState(0);
@@ -50,7 +51,7 @@ export default function Navbar({ topBarHeight = 0 }: NavbarProps) {
 
   // Adjust top position, factoring in scroll so TopBar doesn't leave a gap, and nav hides if navVisible is false
   const effectiveTopBarHeight = Math.max(0, topBarHeight - scrollPos);
-  const navTop = navVisible ? effectiveTopBarHeight : -100;
+  const navTop = navVisible ? topOffset + effectiveTopBarHeight : -100;
 
   return (
     <header
