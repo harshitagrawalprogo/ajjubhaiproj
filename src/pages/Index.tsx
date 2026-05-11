@@ -15,7 +15,6 @@ import MarqueeStrip from "@/components/MarqueeStrip";
 
 const Index = () => {
   const [topBarHeight, setTopBarHeight] = useState(TOPBAR_HEIGHT);
-  const [marqueeHeight, setMarqueeHeight] = useState(0);
 
   const handleHeightChange = useCallback((h: number) => {
     setTopBarHeight(h);
@@ -23,22 +22,20 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <MarqueeStrip fixed onHeightChange={setMarqueeHeight} />
-      <div style={{ paddingTop: marqueeHeight }}>
-        <TopBar onHeightChange={handleHeightChange} />
-        <Navbar topBarHeight={topBarHeight} topOffset={marqueeHeight} />
-        <main style={{ paddingTop: 56 }}>
-          <HeroSection />
-          <AboutSection />
-          <ProgramsSection />
-          <StatsSection />
-          <EventsSection />
-          <CommunitySection />
-          <PartnersSection />
-          <NewsletterSection />
-        </main>
-        <Footer />
-      </div>
+      <TopBar onHeightChange={handleHeightChange} />
+      <Navbar topBarHeight={topBarHeight} />
+      <main style={{ paddingTop: 72 }}>
+        <MarqueeStrip />
+        <HeroSection />
+        <AboutSection />
+        <ProgramsSection />
+        <StatsSection />
+        <EventsSection />
+        <CommunitySection />
+        <PartnersSection />
+        <NewsletterSection />
+      </main>
+      <Footer />
     </div>
   );
 };
