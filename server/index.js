@@ -34,7 +34,7 @@ app.use((req, res, next) => {
   next();
 });
 
-const MEMBERSHIP_TIERS = new Set(["student", "professional", "life", "institutional"]);
+const MEMBERSHIP_TIERS = new Set(["student", "professional", "life", "institutional", "volunteer"]);
 const MEMBER_STATUSES = new Set(["pending", "approved", "rejected"]);
 const MEMBER_CATEGORIES = new Set([
   "Librarian / Library Staff",
@@ -536,6 +536,85 @@ app.get("/api/admin/members", requireAdmin, async (req, res) => {
     res.json({ members: rows.map(publicMember), total, page, limit });
   } catch {
     res.status(500).json({ error: "Failed to load members." });
+  }
+});
+
+app.post("/api/admin/members", requireAdmin, async (req, res) => {
+  try {
+    validateRegistration(req.body);
+
+    const email = String(req.body.email).trim().toLowerCase();
+    const phone = String(req.body.phone).trim();
+    const status = MEMBER_STATUSES.has(String(req.body.status || "").trim())
+      ? String(req.body.status).trim()
+      : "approved";
+
+    const existing = await sql`
+      SELECT id FROM members
+      WHERE lower(email) = ${email} OR phone = ${phone}
+      LIMIT 1
+    `;
+
+    if (existing.length > 0) {
+      return res.status(409).json({ error: "A member with this email or mobile number already exists." });
+    }
+
+    const { membershipNumber, membershipId } = await generateMembershipIdentity();
+    const applicationId = generateApplicationId(membershipNumber);
+    const passwordHash = await bcrypt.hash(String(req.body.password), 10);
+    const approvedAt = status === "approved" ? new Date().toISOString() : null;
+
+    const rows = await sql`
+      INSERT INTO members (
+        membership_number,
+        membership_id,
+        application_id,
+        name,
+        email,
+        phone,
+        password_hash,
+        category,
+        custom_detail,
+        designation,
+        institution,
+        address,
+        city,
+        state,
+        pincode,
+        membership_tier,
+        status,
+        photo_data_url,
+        approved_at,
+        issue_date
+      ) VALUES (
+        ${membershipNumber},
+        ${membershipId},
+        ${applicationId},
+        ${String(req.body.name).trim()},
+        ${email},
+        ${phone},
+        ${passwordHash},
+        ${String(req.body.category).trim()},
+        ${String(req.body.custom_detail).trim()},
+        ${String(req.body.designation).trim()},
+        ${String(req.body.institution).trim()},
+        ${String(req.body.address).trim()},
+        ${String(req.body.city).trim()},
+        ${String(req.body.state).trim()},
+        ${String(req.body.pincode).trim()},
+        ${String(req.body.membership_tier).trim()},
+        ${status},
+        ${req.body.photo_data_url ? String(req.body.photo_data_url) : null},
+        ${approvedAt},
+        ${new Date().toISOString()}
+      )
+      RETURNING *
+    `;
+
+    res.status(201).json({ member: publicMember(rows[0]) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create member.";
+    res.status(400).json({ error: message });
   }
 });
 

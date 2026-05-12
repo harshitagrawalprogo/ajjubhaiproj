@@ -5,16 +5,18 @@ import {
   LayoutDashboard, Users, Settings, LogOut, Globe,
   Phone, Mail, MapPin, Youtube, Facebook, Twitter,
   Linkedin, Instagram, Save, ChevronRight, Menu, X,
-  CalendarDays, Plus, Trash2, Edit2, Image, type LucideIcon
+  CalendarDays, Plus, Trash2, Edit2, Image, FileText, Images, type LucideIcon
 } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { getDefaultSection, getSection, setSection } from "@/lib/contentDb";
-import { getAllMembers, updateMemberStatus, deleteMember } from "@/lib/membershipDb";
+import { createAdminMember, getAllMembers, updateMemberStatus, deleteMember, MEMBERSHIP_TIERS } from "@/lib/membershipDb";
 import { fetchEvents, saveEvent, deleteEvent, type EventItem } from "@/lib/eventsDb";
+import { fetchBlogPosts, saveBlogPosts, type BlogPost } from "@/lib/blogDb";
+import { fetchCarouselSlides, saveCarouselSlides, type CarouselSlide } from "@/lib/carouselDb";
 import { fetchDocumentTemplates, saveDocumentTemplate, type DocumentTemplate } from "@/lib/documentTemplates";
-import type { Member } from "@/lib/supabase";
+import type { Member, MemberStatus, MembershipTier } from "@/lib/supabase";
 
-type Tab = "dashboard" | "members" | "events" | "content" | "social" | "templates" | "programs_research";
+type Tab = "dashboard" | "members" | "events" | "blogs" | "carousel" | "content" | "social" | "templates" | "programs_research";
 
 export default function AdminDashboard() {
   const { isAuthenticated, logout } = useAdminAuth();
@@ -32,6 +34,8 @@ export default function AdminDashboard() {
     { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
     { id: "members", label: "Members", Icon: Users },
     { id: "events", label: "Events CMS", Icon: CalendarDays },
+    { id: "blogs", label: "Blog CMS", Icon: FileText },
+    { id: "carousel", label: "Hero Carousel", Icon: Images },
     { id: "programs_research", label: "Program & Research", Icon: Globe },
     { id: "content", label: "Site Content", Icon: Globe },
     { id: "social", label: "Social Links", Icon: Settings },
@@ -107,6 +111,8 @@ export default function AdminDashboard() {
           {tab === "dashboard" && <DashboardTab />}
           {tab === "members" && <MembersTab />}
           {tab === "events" && <EventsTab />}
+          {tab === "blogs" && <BlogsTab />}
+          {tab === "carousel" && <CarouselTab />}
           {tab === "programs_research" && <ProgramsResearchTab />}
           {tab === "content" && <ContentTab />}
           {tab === "social" && <SocialTab />}
@@ -166,6 +172,9 @@ function MembersTab() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [addingMember, setAddingMember] = useState(false);
+  const [newMember, setNewMember] = useState(() => emptyMemberForm());
+  const [savingMember, setSavingMember] = useState(false);
   const navigate = useNavigate();
 
   const load = () => {
@@ -188,6 +197,20 @@ function MembersTab() {
     load();
   };
 
+  const handleCreateMember = async () => {
+    setSavingMember(true);
+    try {
+      await createAdminMember(newMember);
+      setNewMember(emptyMemberForm());
+      setAddingMember(false);
+      load();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Failed to create member.");
+    } finally {
+      setSavingMember(false);
+    }
+  };
+
   const statusColor: Record<string, string> = {
     pending: "#f97316", approved: "#22c55e", rejected: "#ef4444",
   };
@@ -196,7 +219,14 @@ function MembersTab() {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-white">Members</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
+          <button
+            onClick={() => setAddingMember((value) => !value)}
+            className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all"
+            style={{ background: "#c9a84c", color: "#0d1b3e" }}
+          >
+            <Plus size={14} /> {addingMember ? "Close Form" : "Add Member"}
+          </button>
           {(["all", "pending", "approved", "rejected"] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all"
@@ -209,6 +239,62 @@ function MembersTab() {
           ))}
         </div>
       </div>
+
+      {addingMember && (
+        <div className="mb-8">
+          <Section title="Add Member">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Full Name" value={newMember.name} onChange={v => setNewMember(d => ({ ...d, name: v }))} />
+              <Field label="Email" value={newMember.email} onChange={v => setNewMember(d => ({ ...d, email: v }))} />
+              <Field label="Phone" value={newMember.phone} onChange={v => setNewMember(d => ({ ...d, phone: v }))} />
+              <Field label="Password" value={newMember.password} onChange={v => setNewMember(d => ({ ...d, password: v }))} />
+              <Field label="Designation" value={newMember.designation} onChange={v => setNewMember(d => ({ ...d, designation: v }))} />
+              <Field label="Institution" value={newMember.institution} onChange={v => setNewMember(d => ({ ...d, institution: v }))} />
+              <Field label="City" value={newMember.city} onChange={v => setNewMember(d => ({ ...d, city: v }))} />
+              <Field label="State" value={newMember.state} onChange={v => setNewMember(d => ({ ...d, state: v }))} />
+              <Field label="PIN Code" value={newMember.pincode} onChange={v => setNewMember(d => ({ ...d, pincode: v }))} />
+              <Field label="Photo URL or Data URL" value={newMember.photo_data_url || ""} onChange={v => setNewMember(d => ({ ...d, photo_data_url: v }))} />
+            </div>
+            <Field label="Address" textarea value={newMember.address} onChange={v => setNewMember(d => ({ ...d, address: v }))} />
+            <Field label="Custom Detail" textarea value={newMember.custom_detail} onChange={v => setNewMember(d => ({ ...d, custom_detail: v }))} />
+            <div className="grid gap-4 md:grid-cols-3">
+              <SelectField
+                label="Category"
+                value={newMember.category}
+                onChange={v => setNewMember(d => ({ ...d, category: v }))}
+                options={[
+                  "Librarian / Library Staff",
+                  "LIS Teacher",
+                  "LIS Student",
+                  "LIS Research Scholar",
+                  "Retired LIS Professional",
+                  "Others",
+                ]}
+              />
+              <SelectField
+                label="Membership Type"
+                value={newMember.membership_tier}
+                onChange={v => setNewMember(d => ({ ...d, membership_tier: v as MembershipTier }))}
+                options={MEMBERSHIP_TIERS.map(tier => tier.value)}
+              />
+              <SelectField
+                label="Status"
+                value={newMember.status || "approved"}
+                onChange={v => setNewMember(d => ({ ...d, status: v as MemberStatus }))}
+                options={["approved", "pending", "rejected"]}
+              />
+            </div>
+            <button
+              onClick={handleCreateMember}
+              disabled={savingMember}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:-translate-y-0.5 disabled:opacity-60"
+              style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)", color: "#0d1b3e" }}
+            >
+              <Save size={16} /> {savingMember ? "Creating..." : "Create Member"}
+            </button>
+          </Section>
+        </div>
+      )}
 
       {loading ? (
         <p className="text-white/40 text-center py-12">Loading members…</p>
@@ -468,6 +554,47 @@ function Field({
 }
 
 // ─────────── Events tab ────────────────────────────────────
+function SelectField({
+  label, value, onChange, options,
+}: {
+  label: string; value: string; onChange: (v: string) => void; options: string[];
+}) {
+  return (
+    <div>
+      <label className="block text-white/40 text-xs mb-1.5 uppercase tracking-wider">{label}</label>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-[10px] border border-white/10 bg-[#111b32] px-3 py-2.5 text-[13px] text-white outline-none"
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function emptyMemberForm() {
+  return {
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    category: "Librarian / Library Staff",
+    custom_detail: "",
+    designation: "",
+    institution: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+    membership_tier: "life" as MembershipTier,
+    status: "approved" as MemberStatus,
+    photo_data_url: "",
+  };
+}
+
 function EventsTab() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -607,6 +734,181 @@ function EventsTab() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function BlogsTab() {
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
+
+  const load = () => {
+    setLoading(true);
+    fetchBlogPosts().then(data => { setPosts(data); setLoading(false); }).catch(() => setLoading(false));
+  };
+
+  useEffect(load, []);
+
+  const handleSave = async () => {
+    if (!editingPost?.title.trim()) return alert("Blog title is required.");
+    const nextPosts = posts.some(post => post.id === editingPost.id)
+      ? posts.map(post => post.id === editingPost.id ? editingPost : post)
+      : [editingPost, ...posts];
+    await saveBlogPosts(nextPosts);
+    setEditingPost(null);
+    load();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this blog post?")) return;
+    await saveBlogPosts(posts.filter(post => post.id !== id));
+    load();
+  };
+
+  if (editingPost) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl font-bold text-white">{posts.some(post => post.id === editingPost.id) ? "Edit Blog" : "New Blog"}</h1>
+          <button onClick={() => setEditingPost(null)} className="text-white/50 hover:text-white transition-all text-sm">Cancel</button>
+        </div>
+        <Section title="Blog Details">
+          <Field label="Title" value={editingPost.title} onChange={v => setEditingPost({ ...editingPost, title: v })} />
+          <Field label="Author" value={editingPost.author} onChange={v => setEditingPost({ ...editingPost, author: v })} />
+          <Field label="Image URL" value={editingPost.image_url} onChange={v => setEditingPost({ ...editingPost, image_url: v })} />
+          <Field label="Article Text" textarea value={editingPost.text} onChange={v => setEditingPost({ ...editingPost, text: v })} />
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:-translate-y-0.5"
+            style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)", color: "#0d1b3e" }}
+          >
+            <Save size={16} /> Save Blog
+          </button>
+        </Section>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold text-white">Blog CMS</h1>
+        <button
+          onClick={() => setEditingPost({ id: crypto.randomUUID(), title: "", author: "", text: "", image_url: "", published_at: new Date().toISOString() })}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90"
+          style={{ background: "#c9a84c", color: "#0d1b3e" }}
+        >
+          <Plus size={16} /> Add Blog
+        </button>
+      </div>
+      {loading ? <p className="text-white/40 text-center py-12">Loading blogs...</p> : (
+        <div className="space-y-3">
+          {posts.length === 0 && <p className="text-white/40 text-center py-12">No blog posts yet.</p>}
+          {posts.map(post => (
+            <div key={post.id} className="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 border border-white/10 bg-white/5">
+              {post.image_url && <img src={post.image_url} alt="" className="h-16 w-24 rounded-lg object-cover" />}
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-white">{post.title}</p>
+                <p className="text-white/40 text-xs mt-1">By {post.author || "LIS Academy"}</p>
+                <p className="text-white/30 text-xs truncate">{post.text}</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setEditingPost(post)} className="p-2 rounded-lg text-white/50 hover:text-[#c9a84c] hover:bg-[#c9a84c]/10 transition-all border border-transparent hover:border-[#c9a84c]/30">
+                  <Edit2 size={16} />
+                </button>
+                <button onClick={() => handleDelete(post.id)} className="p-2 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-400/10 transition-all border border-transparent hover:border-red-400/30">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function CarouselTab() {
+  const [slides, setSlides] = useState<CarouselSlide[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    fetchCarouselSlides().then(data => { setSlides(data); setLoading(false); }).catch(() => setLoading(false));
+  };
+
+  useEffect(load, []);
+
+  const updateSlide = (id: string, patch: Partial<CarouselSlide>) => {
+    setSlides(current => current.map(slide => slide.id === id ? { ...slide, ...patch } : slide));
+  };
+
+  const handleSave = async () => {
+    await saveCarouselSlides(slides);
+    load();
+  };
+
+  const addSlide = () => {
+    setSlides(current => [
+      ...current,
+      { id: crypto.randomUUID(), image_url: "", title: "", sort_order: current.length * 10 + 10 },
+    ]);
+  };
+
+  const removeSlide = (id: string) => {
+    setSlides(current => current.filter(slide => slide.id !== id));
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Hero Carousel</h1>
+          <p className="mt-2 text-sm text-white/40">Add image links and control sequencing with sort order. Lower numbers appear first.</p>
+        </div>
+        <button
+          onClick={addSlide}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-90"
+          style={{ background: "#c9a84c", color: "#0d1b3e" }}
+        >
+          <Plus size={16} /> Add Slide
+        </button>
+      </div>
+      {loading ? <p className="text-white/40 text-center py-12">Loading carousel...</p> : (
+        <div className="space-y-4">
+          {slides.length === 0 && <p className="text-white/40 text-center py-12">No admin carousel slides yet. The homepage will use event images until you add slides here.</p>}
+          {slides.map(slide => (
+            <Section key={slide.id} title={slide.title || "Carousel Slide"}>
+              <div className="grid gap-4 md:grid-cols-[140px,1fr] md:items-start">
+                <div className="h-24 overflow-hidden rounded-xl bg-white/5">
+                  {slide.image_url ? <img src={slide.image_url} alt="" className="h-full w-full object-cover" /> : null}
+                </div>
+                <div className="space-y-4">
+                  <Field label="Image Link" value={slide.image_url} onChange={v => updateSlide(slide.id, { image_url: v })} />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Title / Label" value={slide.title} onChange={v => updateSlide(slide.id, { title: v })} />
+                    <Field label="Sort Order" value={String(slide.sort_order)} onChange={v => updateSlide(slide.id, { sort_order: Number(v || 0) })} />
+                  </div>
+                  <button
+                    onClick={() => removeSlide(slide.id)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2 text-xs font-semibold text-red-300"
+                  >
+                    <Trash2 size={14} /> Remove Slide
+                  </button>
+                </div>
+              </div>
+            </Section>
+          ))}
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:-translate-y-0.5"
+            style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)", color: "#0d1b3e" }}
+          >
+            <Save size={16} /> Save Carousel
+          </button>
         </div>
       )}
     </motion.div>

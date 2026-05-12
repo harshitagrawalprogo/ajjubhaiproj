@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { fetchEvents } from "@/lib/eventsDb";
+import { fetchCarouselSlides } from "@/lib/carouselDb";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const defaultEventImages = [
@@ -17,7 +18,13 @@ export default function HeroSection() {
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
-    fetchEvents().then((events) => {
+    fetchCarouselSlides().then((slides) => {
+      if (slides.length > 0) {
+        setCarouselImages(slides.map((slide) => slide.image_url));
+        return;
+      }
+
+      return fetchEvents().then((events) => {
       const images = events
         .map((event) => event.image_url)
         .filter((url): url is string => Boolean(url));
@@ -28,6 +35,7 @@ export default function HeroSection() {
         }
         setCarouselImages(finalImages);
       }
+      });
     }).catch(console.error);
   }, []);
 

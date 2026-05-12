@@ -67,6 +67,15 @@ export async function createMember(input: CreateMemberInput): Promise<Member> {
   return registerMember(input);
 }
 
+export async function createAdminMember(input: CreateMemberInput & { status?: MemberStatus }): Promise<Member> {
+  const response = await apiRequest<{ member: Member }>("/api/admin/members", {
+    method: "POST",
+    headers: adminHeaders(),
+    body: JSON.stringify(input),
+  });
+  return response.member;
+}
+
 export async function adminLogin(username: string, password: string): Promise<void> {
   const response = await apiRequest<{ token: string }>("/api/admin/login", {
     method: "POST",

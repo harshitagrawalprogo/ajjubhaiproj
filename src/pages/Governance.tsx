@@ -2,127 +2,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageLayout from "@/components/PageLayout";
 import PageHeader from "@/components/PageHeader";
-
-const founderTrustees = [
-  {
-    name: "Dr. P. V. Konnur",
-    role: "President, LIS Academy, Bangalore",
-    photo: "/lisa-trustees/pv-konnur.png",
-  },
-  {
-    name: "Dr. S. Srinivasa Ragavan",
-    role: "Professor & University Librarian, Bharathidasan University, Trichy",
-    photo: "/lisa-trustees/srinivasa-ragavan.jpg",
-  },
-  {
-    name: "Dr. Arun Adrakatti",
-    role: "Deputy Librarian, National Institute of Technology Calicut, Kozhikode, Kerala",
-    photo: "/lisa-trustees/arun-adrakatti.jpg",
-  },
-  {
-    name: "D.T.A.Mohan",
-    role: "University Librarian, Doctor Harisingh Gour Vishwavidyalaya, Sagar",
-    photo: "/lisa-trustees/ta-mohan.jpeg",
-  },
-  {
-    name: "Dr. K. R. Mulla",
-    role: "Librarian, MSRIT, Bengaluru",
-    photo: "/lisa-trustees/kr-mulla.jpg",
-    imagePosition: "center 38%",
-  },
-  {
-    name: "Dr. Manjunatha S",
-    role: "Librarian, Government First Grade College, Malleswaram, Bangalore",
-    photo: "/lisa-trustees/manjunatha-s.jpg",
-  },
-  {
-    name: "Venkataraju R. S.",
-    role: "Former Assistant Director, Prasaranga, VTU Belagavi; Former Asst Librarian, Dept of Public Libraries, Bangalore",
-    photo: "/lisa-trustees/venkataraju-rs.jpg",
-  },
-  {
-    name: "Dr. R. S. Wodeyar",
-    role: "Deputy Librarian, Central University, Rajasthan",
-    photo: "/lisa-trustees/rs-wodeyar.png",
-  },
-  {
-    name: "Dr. Basavaraj S Kumbar",
-    role: "Librarian, Gogte Institute of Technology, Belagavi",
-    photo: "/lisa-trustees/basavaraj-kumbar.jpg",
-  },
-  {
-    name: "Dr. Shivaram B. S.",
-    role: "Head - ICAST, CSIR-National Aerospace Laboratories, Bengaluru",
-    photo: "/lisa-trustees/shivaram-bs.jpg",
-  },
-  {
-    name: "Dr. P. Y. Rajendra Kumar",
-    role: "Former Director General, National Library of India, Kolkata",
-    photo: "/lisa-trustees/py-rajendra-kumar.jpg",
-  },
-];
-
-const invitedTrustees = [
-  {
-    name: "Dr. G. Mahesh",
-    role: "Chief Scientist, NISCAIR, New Delhi-67",
-    photo: "/lisa-trustees/g-mahesh.png",
-  },
-  {
-    name: "Dr. S. M. Pujar",
-    role: "Chief Librarian, Indira Gandhi Institute for Development Research (IGIDR), Mumbai",
-    photo: "/lisa-trustees/sm-pujar.jpg",
-  },
-  {
-    name: "Dr. Satish Munnolli",
-    role: "Chief Librarian, Advanced Centre for Treatment, Research and Education in Cancer (ACTREC), Navi Mumbai",
-    photo: "/lisa-trustees/satish-munnolli.jpg",
-  },
-];
-
-const advisoryBoard = [
-  {
-    name: "Dr. Mahendra Jadhav",
-    role: "Librarian, IIT Madras, Chennai",
-    photo: "/lisa-trustees/mahendra-jadhav.jpeg",
-  },
-  {
-    name: "Dr. Bhojaraju Gunjal",
-    role: "Head, Central Library, NIT Rourkela, Odisha",
-    photo: "/lisa-trustees/bhojaraju-gunjal.jpeg",
-  },
-  {
-    name: "Dr. S. L. Sangam",
-    role: "Former Chairman, Dept of Library & Information Science, Karnatak University, Dharwad",
-    photo: "/lisa-trustees/sl-sangam.png",
-  },
-  {
-    name: "Dr. M. G. Sreekumar",
-    role: "Vice President & Director, Libraries at Jio Institute, Navi Mumbai, Maharashtra",
-    photo: "/lisa-trustees/mg-sreekumar.jpg",
-  },
-  {
-    name: "Dr. Sathish Kumar Hosamani",
-    role: "Director, Department of Public Libraries, Bangalore",
-    photo: "/lisa-trustees/sathish-kumar-hosamani.png",
-  },
-  {
-    name: "Dr. Suresh Jange",
-    role: "University Librarian, Gulbarga University, Kalaburagi",
-    photo: "/lisa-trustees/suresh-jange.png",
-  },
-  {
-    name: "Dr. Bibhuti Bhusan Sahoo",
-    role: "Deputy Librarian, IIT Bhubaneswar, Odisha",
-    photo: "/lisa-trustees/bibhuti-sahoo.jpg",
-  },
-];
-
-const tabs = [
-  { id: "founder", label: "Founder Trustees", data: founderTrustees },
-  { id: "invited", label: "Invited Trustees", data: invitedTrustees },
-  { id: "advisory", label: "Advisory Board", data: advisoryBoard },
-];
+import {
+  governanceTabs,
+  TRUSTEE_IMAGE_VERSION,
+  type GovernanceMember,
+} from "@/data/governance";
 
 function getInitials(name: string) {
   return name
@@ -135,7 +19,7 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-function MemberCard({ member, index }: { member: any; index: number }) {
+function MemberCard({ member, index }: { member: GovernanceMember; index: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -148,7 +32,7 @@ function MemberCard({ member, index }: { member: any; index: number }) {
         <div className="w-36 h-36 md:w-40 md:h-40 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-serif text-4xl mb-5 border-4 border-white shadow-md overflow-hidden relative">
           {member.photo ? (
             <img
-              src={member.photo}
+              src={`${member.photo}?v=${TRUSTEE_IMAGE_VERSION}`}
               alt={member.name}
               className="h-full w-full object-cover"
               style={{ objectPosition: member.imagePosition || "center center" }}
@@ -174,15 +58,22 @@ function MemberCard({ member, index }: { member: any; index: number }) {
 }
 
 export default function Governance() {
-  const [activeTab, setActiveTab] = useState(tabs[0].id);
+  const [activeTab, setActiveTab] = useState(governanceTabs[0].id);
 
-  const activeData = tabs.find((t) => t.id === activeTab)?.data || [];
+  const activeData = governanceTabs.find((t) => t.id === activeTab)?.data || [];
 
   return (
     <PageLayout>
       <PageHeader
-        tag="Governance"
-        title="Our Leadership"
+        tag=""
+        title={
+          <>
+            Governance
+            <span className="block mt-4 text-3xl md:text-4xl lg:text-5xl font-medium text-[#c9a84c]">
+              Our Leadership
+            </span>
+          </>
+        }
         description="The esteemed professionals guiding the vision and mission of LIS Academy."
       />
 
@@ -190,7 +81,7 @@ export default function Governance() {
         <div className="max-w-7xl mx-auto px-6">
           {/* Subpage Tabs */}
           <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-16">
-            {tabs.map((tab) => (
+            {governanceTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}

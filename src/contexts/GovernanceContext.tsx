@@ -1,150 +1,28 @@
-import React, { createContext, useContext, useState } from "react";
-
-export const founderTrustees = [
-  {
-    name: "Dr. P. V. Konnur",
-    role: "President, LIS Academy, Bangalore",
-    photo: "/lisa-trustees/pv-konnur.png",
-  },
-  {
-    name: "Dr. S. Srinivasa Ragavan",
-    role: "Professor & University Librarian, Bharathidasan University, Trichy",
-    photo: "/lisa-trustees/srinivasa-ragavan.jpg",
-  },
-  {
-    name: "Dr. Arun Adrakatti",
-    role: "Deputy Librarian, National Institute of Technology Calicut, Kozhikode, Kerala",
-    photo: "/lisa-trustees/arun-adrakatti.jpg",
-  },
-  {
-    name: "D.T.A.Mohan",
-    role: "University Librarian, Doctor Harisingh Gour Vishwavidyalaya, Sagar",
-    photo: "/lisa-trustees/ta-mohan.jpeg",
-  },
-  {
-    name: "Dr. K. R. Mulla",
-    role: "Librarian, MSRIT, Bengaluru",
-    photo: "/lisa-trustees/kr-mulla.jpg",
-    imagePosition: "center 38%",
-  },
-  {
-    name: "Dr. Manjunatha S",
-    role: "Librarian, Government First Grade College, Malleswaram, Bangalore",
-    photo: "/lisa-trustees/manjunatha-s.jpg",
-  },
-  {
-    name: "Venkataraju R. S.",
-    role: "Former Assistant Director, Prasaranga, VTU Belagavi; Former Asst Librarian, Dept of Public Libraries, Bangalore",
-    photo: "/lisa-trustees/venkataraju-rs.jpg",
-  },
-  {
-    name: "Dr. R. S. Wodeyar",
-    role: "Deputy Librarian, Central University, Rajasthan",
-    photo: "/lisa-trustees/rs-wodeyar.png",
-  },
-  {
-    name: "Dr. Basavaraj S Kumbar",
-    role: "Librarian, Gogte Institute of Technology, Belagavi",
-    photo: "/lisa-trustees/basavaraj-kumbar.jpg",
-  },
-  {
-    name: "Dr. Shivaram B. S.",
-    role: "Head - ICAST, CSIR-National Aerospace Laboratories, Bengaluru",
-    photo: "/lisa-trustees/shivaram-bs.jpg",
-  },
-  {
-    name: "Dr. P. Y. Rajendra Kumar",
-    role: "Former Director General, National Library of India, Kolkata",
-    photo: "/lisa-trustees/py-rajendra-kumar.jpg",
-  },
-];
-
-export const invitedTrustees = [
-  {
-    name: "Dr. G. Mahesh",
-    role: "Chief Scientist, NISCAIR, New Delhi-67",
-    photo: "/lisa-trustees/g-mahesh.png",
-  },
-  {
-    name: "Dr. S. M. Pujar",
-    role: "Chief Librarian, Indira Gandhi Institute for Development Research (IGIDR), Mumbai",
-    photo: "/lisa-trustees/sm-pujar.jpg",
-  },
-  {
-    name: "Dr. Satish Munnolli",
-    role: "Chief Librarian, Advanced Centre for Treatment, Research and Education in Cancer (ACTREC), Navi Mumbai",
-    photo: "/lisa-trustees/satish-munnolli.jpg",
-  },
-];
-
-export const advisoryBoard = [
-  {
-    name: "Dr. Mahendra Jadhav",
-    role: "Librarian, IIT Madras, Chennai",
-    photo: "/lisa-trustees/mahendra-jadhav.jpeg",
-  },
-  {
-    name: "Dr. Bhojaraju Gunjal",
-    role: "Head, Central Library, NIT Rourkela, Odisha",
-    photo: "/lisa-trustees/bhojaraju-gunjal.jpeg",
-  },
-  {
-    name: "Dr. S. L. Sangam",
-    role: "Former Chairman, Dept of Library & Information Science, Karnatak University, Dharwad",
-    photo: "/lisa-trustees/sl-sangam.png",
-  },
-  {
-    name: "Dr. M. G. Sreekumar",
-    role: "Vice President & Director, Libraries at Jio Institute, Navi Mumbai, Maharashtra",
-    photo: "/lisa-trustees/mg-sreekumar.jpg",
-  },
-  {
-    name: "Dr. Sathish Kumar Hosamani",
-    role: "Director, Department of Public Libraries, Bangalore",
-    photo: "/lisa-trustees/sathish-kumar-hosamani.png",
-  },
-  {
-    name: "Dr. Suresh Jange",
-    role: "University Librarian, Gulbarga University, Kalaburagi",
-    photo: "/lisa-trustees/suresh-jange.png",
-  },
-  {
-    name: "Dr. Bibhuti Bhusan Sahoo",
-    role: "Deputy Librarian, IIT Bhubaneswar, Odisha",
-    photo: "/lisa-trustees/bibhuti-sahoo.jpg",
-  },
-];
-
-export const tabs = [
-  { id: "founder", label: "Founder Trustees", data: founderTrustees },
-  { id: "invited", label: "Invited Trustees", data: invitedTrustees },
-  { id: "advisory", label: "Advisory Board", data: advisoryBoard },
-];
+import React, { createContext, useState } from "react";
+import {
+  governanceTabs,
+  type GovernanceMember,
+  type GovernanceTabId,
+} from "@/data/governance";
 
 interface GovernanceContextType {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-  activeData: any[];
-  tabs: typeof tabs;
+  activeTab: GovernanceTabId;
+  setActiveTab: (tab: GovernanceTabId) => void;
+  activeData: GovernanceMember[];
+  tabs: typeof governanceTabs;
 }
 
 const GovernanceContext = createContext<GovernanceContextType | undefined>(undefined);
 
 export function GovernanceProvider({ children }: { children: React.ReactNode }) {
-  const [activeTab, setActiveTab] = useState(tabs[0].id);
-  const activeData = tabs.find((t) => t.id === activeTab)?.data || [];
+  const [activeTab, setActiveTab] = useState<GovernanceTabId>(governanceTabs[0].id);
+  const activeData = governanceTabs.find((t) => t.id === activeTab)?.data || [];
 
   return (
-    <GovernanceContext.Provider value={{ activeTab, setActiveTab, activeData, tabs }}>
+    <GovernanceContext.Provider
+      value={{ activeTab, setActiveTab, activeData, tabs: governanceTabs }}
+    >
       {children}
     </GovernanceContext.Provider>
   );
-}
-
-export function useGovernance() {
-  const context = useContext(GovernanceContext);
-  if (context === undefined) {
-    throw new Error("useGovernance must be used within a GovernanceProvider");
-  }
-  return context;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Award, Check, CreditCard, Download, Printer, X } from "lucide-react";
@@ -23,17 +23,17 @@ export default function AdminMemberDetail() {
     if (!isAuthenticated) navigate("/admin");
   }, [isAuthenticated, navigate]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     const current = await getMemberById(id);
     setMember(current);
     setLoading(false);
-  };
+  }, [id]);
 
   useEffect(() => {
     load();
-  }, [id]);
+  }, [load]);
 
   const handleApprove = async () => {
     if (!member) return;

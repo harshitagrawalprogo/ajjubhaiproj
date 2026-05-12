@@ -63,8 +63,15 @@ export default function Programs() {
   return (
     <PageLayout>
       <PageHeader
-        tag="Programs"
-        title="Services and Professional Support"
+        tag=""
+        title={
+          <>
+            Programs
+            <span className="block mt-4 text-3xl md:text-4xl lg:text-5xl font-medium text-[#c9a84c]">
+              Services and Professional Support
+            </span>
+          </>
+        }
         description="A structured overview of LIS Academy's public-facing service areas and institutional support model."
       />
 
