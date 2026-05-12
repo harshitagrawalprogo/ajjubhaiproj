@@ -1,15 +1,35 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
+import { fetchEvents } from "@/lib/eventsDb";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const carouselImages = Array.from(
-  { length: 20 },
-  (_, i) => `/carousel/274dcbd2821daddd00bfa14414712b25-${i}.jpg`,
-);
+const defaultEventImages = [
+  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=2000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1558403194-611308249627?q=80&w=2000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1491975474562-1f4e30bc9468?q=80&w=2000&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=2000&auto=format&fit=crop",
+];
 
 export default function HeroSection() {
+  const [carouselImages, setCarouselImages] = useState<string[]>(defaultEventImages);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    fetchEvents().then((events) => {
+      const images = events
+        .map((event) => event.image_url)
+        .filter((url): url is string => Boolean(url));
+      if (images.length > 0) {
+        const finalImages = [...images].slice(0, 5);
+        while (finalImages.length < 5) {
+          finalImages.push(defaultEventImages[finalImages.length % defaultEventImages.length]);
+        }
+        setCarouselImages(finalImages);
+      }
+    }).catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (paused) return;

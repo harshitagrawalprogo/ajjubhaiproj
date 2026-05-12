@@ -175,6 +175,9 @@ export default function AboutSection() {
           className="mt-24 border-t border-border pt-16 scroll-mt-24"
         >
           <div className="text-center max-w-4xl mx-auto mb-16">
+            <h2 className="font-serif text-4xl md:text-5xl font-bold text-foreground mb-4">
+              LISA TAGLINE
+            </h2>
             <h2 className="text-3xl md:text-5xl font-serif font-bold text-foreground mb-6">
               <span style={{ color: "#c0392b" }}>Learn</span>
               <span className="text-muted-foreground mx-3 md:mx-4 font-light">

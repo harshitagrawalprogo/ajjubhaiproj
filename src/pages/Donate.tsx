@@ -5,7 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import { getSection } from "@/lib/contentDb";
 
 const defaultDonateContent = {
-  headline: "Support LIS Academy",
+  headline: "Support LIS Academy ?",
   intro:
     "Your contribution helps LIS Academy expand professional development, research, and community initiatives for library and information science.",
   note: "Contributions are accepted in multiples of Rs. 500. Please choose an amount and continue to the payment gateway.",
@@ -67,11 +67,11 @@ export default function Donate() {
               </div>
             </div>
 
-            <div className="rounded-[32px] border border-white/10 bg-white p-8 flex flex-col items-center justify-center">
+            <div className="rounded-[32px] border border-white/10 bg-[#0d1b3e] p-8 flex flex-col items-center justify-center">
               <img
                 src="/upi-qr.png"
                 alt="LIS Academy UPI QR Code"
-                className="w-full max-w-sm h-auto object-contain rounded-2xl"
+                className="w-full max-w-sm h-auto object-contain rounded-2xl bg-white"
               />
             </div>
           </div>
