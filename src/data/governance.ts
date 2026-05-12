@@ -77,7 +77,7 @@ export const founderTrustees: GovernanceMember[] = [
 export const invitedTrustees: GovernanceMember[] = [
   {
     name: "Dr. G. Mahesh",
-    role: "Chief Scientist, NISCAIR, New Delhi-67",
+    role: "Chief Scientist, CSIR-Hq, New Delhi-67",
     photo: "/lisa-trustees/g-mahesh.png",
   },
   {

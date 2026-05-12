@@ -518,9 +518,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Field({
-  label, value, onChange, textarea = false, icon
+  label, value, onChange, textarea = false, icon, type = "text",
 }: {
-  label: string; value: string; onChange: (v: string) => void; textarea?: boolean; icon?: React.ReactNode;
+  label: string; value: string; onChange: (v: string) => void; textarea?: boolean; icon?: React.ReactNode; type?: string;
 }) {
   const sharedStyle = {
     width: "100%",
@@ -546,8 +546,55 @@ function Field({
         {textarea ? (
           <textarea rows={3} style={sharedStyle} value={value} onChange={e => onChange(e.target.value)} />
         ) : (
-          <input type="text" style={sharedStyle} value={value} onChange={e => onChange(e.target.value)} />
+          <input type={type} style={sharedStyle} value={value} onChange={e => onChange(e.target.value)} />
         )}
+      </div>
+    </div>
+  );
+}
+
+function ListField({
+  label, values, onChange, placeholder,
+}: {
+  label: string; values: string[]; onChange: (values: string[]) => void; placeholder: string;
+}) {
+  const rows = values.length > 0 ? values : [""];
+  const updateRow = (index: number, value: string) => {
+    const next = [...rows];
+    next[index] = value;
+    onChange(next);
+  };
+
+  return (
+    <div>
+      <label className="block text-white/40 text-xs mb-1.5 uppercase tracking-wider">{label}</label>
+      <div className="space-y-2">
+        {rows.map((value, index) => (
+          <div key={index} className="flex gap-2">
+            <input
+              type="text"
+              value={value}
+              placeholder={placeholder}
+              onChange={(event) => updateRow(index, event.target.value)}
+              className="min-w-0 flex-1 rounded-[10px] border border-white/10 bg-white/5 px-3 py-2.5 text-[13px] text-white outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => onChange(rows.filter((_, rowIndex) => rowIndex !== index))}
+              className="rounded-lg border border-red-400/25 bg-red-400/10 px-3 text-red-300"
+              aria-label={`Remove ${label} row ${index + 1}`}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => onChange([...rows, ""])}
+          className="inline-flex items-center gap-2 rounded-lg border border-[#c9a84c]/30 bg-[#c9a84c]/10 px-3 py-2 text-xs font-semibold text-[#f0d080]"
+        >
+          <Plus size={14} /> Add Row
+        </button>
       </div>
     </div>
   );
@@ -614,6 +661,8 @@ function EventsTab() {
 
   const handleSave = async () => {
     if (!editingEvent?.title) return alert("Title is required");
+    const cleanSpeakers = (editingEvent.speakers || []).map(item => item.trim()).filter(Boolean);
+    const cleanAgenda = (editingEvent.agenda || []).map(item => item.trim()).filter(Boolean);
     const payload: EventItem | Omit<EventItem, "id"> = editingEvent.id
       ? {
           id: editingEvent.id,
@@ -622,8 +671,8 @@ function EventsTab() {
           location: editingEvent.location || "",
           type: editingEvent.type || "Conference",
           description: editingEvent.description || "",
-          speakers: editingEvent.speakers || [],
-          agenda: editingEvent.agenda || [],
+          speakers: cleanSpeakers,
+          agenda: cleanAgenda,
           image_url: editingEvent.image_url || "",
           registration_url: editingEvent.registration_url || "",
           brochure_url: editingEvent.brochure_url || "",
@@ -640,8 +689,8 @@ function EventsTab() {
           location: editingEvent.location || "",
           type: editingEvent.type || "Conference",
           description: editingEvent.description || "",
-          speakers: editingEvent.speakers || [],
-          agenda: editingEvent.agenda || [],
+          speakers: cleanSpeakers,
+          agenda: cleanAgenda,
           image_url: editingEvent.image_url || "",
           registration_url: editingEvent.registration_url || "",
           brochure_url: editingEvent.brochure_url || "",
@@ -666,15 +715,25 @@ function EventsTab() {
           <Section title="Event Details">
             <Field label="Title" value={editingEvent.title || ""} onChange={v => setEditingEvent({ ...editingEvent, title: v })} />
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Date" value={editingEvent.date || ""} onChange={v => setEditingEvent({ ...editingEvent, date: v })} />
+              <Field label="Date" type="date" value={editingEvent.date || ""} onChange={v => setEditingEvent({ ...editingEvent, date: v })} />
               <Field label="Location" value={editingEvent.location || ""} onChange={v => setEditingEvent({ ...editingEvent, location: v })} />
             </div>
             <Field label="Type (e.g. Conference, Workshop)" value={editingEvent.type || ""} onChange={v => setEditingEvent({ ...editingEvent, type: v })} />
             <Field label="Description" textarea value={editingEvent.description || ""} onChange={v => setEditingEvent({ ...editingEvent, description: v })} />
           </Section>
           <Section title="Additional Info">
-            <Field label="Speakers (comma separated)" value={editingEvent.speakers?.join(', ') || ""} onChange={v => setEditingEvent({ ...editingEvent, speakers: v.split(',').map(s => s.trim()).filter(Boolean) })} />
-            <Field label="Agenda (comma separated)" value={editingEvent.agenda?.join(', ') || ""} onChange={v => setEditingEvent({ ...editingEvent, agenda: v.split(',').map(a => a.trim()).filter(Boolean) })} textarea />
+            <ListField
+              label="Speakers"
+              values={editingEvent.speakers || []}
+              placeholder="Speaker name"
+              onChange={values => setEditingEvent({ ...editingEvent, speakers: values })}
+            />
+            <ListField
+              label="Agenda"
+              values={editingEvent.agenda || []}
+              placeholder="Agenda item"
+              onChange={values => setEditingEvent({ ...editingEvent, agenda: values })}
+            />
             <Field label="Image URL" value={editingEvent.image_url || ""} onChange={v => setEditingEvent({ ...editingEvent, image_url: v })} />
             <Field label="Conference Brochure URL" value={editingEvent.brochure_url || ""} onChange={v => setEditingEvent({ ...editingEvent, brochure_url: v })} />
             <Field label="Photo Gallery URL" value={editingEvent.gallery_url || ""} onChange={v => setEditingEvent({ ...editingEvent, gallery_url: v })} />

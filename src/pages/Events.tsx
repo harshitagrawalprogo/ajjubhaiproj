@@ -1,11 +1,9 @@
 import { motion, useInView } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import PageLayout from "@/components/PageLayout";
 import PageHeader from "@/components/PageHeader";
-import { Calendar, MapPin, Clock, Users, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { MapPin, Clock, Users, ExternalLink } from "lucide-react";
 import { fetchEvents, type EventItem } from "@/lib/eventsDb";
-
-const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 function FadeIn({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
   const ref = useRef(null);
@@ -23,22 +21,69 @@ function FadeIn({ children, delay = 0, className = "" }: { children: React.React
   );
 }
 
+function parseEventDate(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const isoDate = trimmed.match(/\d{4}-\d{2}-\d{2}/)?.[0];
+  const candidate = isoDate || trimmed;
+  const parsed = new Date(candidate);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getCountdown(targetDate: Date) {
+  const diff = targetDate.getTime() - Date.now();
+  if (diff <= 0) return "Happening now";
+
+  const days = Math.floor(diff / 86_400_000);
+  const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((diff % 3_600_000) / 60_000);
+
+  if (days > 0) return `${days}d ${hours}h left`;
+  if (hours > 0) return `${hours}h ${minutes}m left`;
+  return `${minutes}m left`;
+}
+
+function CountdownBadge({ date }: { date: Date }) {
+  const [label, setLabel] = useState(() => getCountdown(date));
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setLabel(getCountdown(date)), 60_000);
+    return () => window.clearInterval(interval);
+  }, [date]);
+
+  return (
+    <span className="shrink-0 rounded-lg border border-[#c9a84c]/35 bg-[#c9a84c]/10 px-3 py-1.5 text-xs font-semibold text-[#f0d080]">
+      {label}
+    </span>
+  );
+}
+
 export default function Events() {
   const [events, setEvents] = useState<EventItem[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState(0);
-  const [calMonth, setCalMonth] = useState(3);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchEvents().then((data) => {
       setEvents(data);
-      if (data.length > 0) setSelectedEvent(0);
+      if (data.length > 0) setSelectedEventId(data[0].id || data[0].title);
     }).catch(() => {
       setEvents([]);
     }).finally(() => {
       setLoading(false);
     });
   }, []);
+
+  const upcomingEvents = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return events
+      .map((event) => ({ event, date: parseEventDate(event.date) }))
+      .filter((item): item is { event: EventItem; date: Date } => Boolean(item.date) && item.date >= today)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [events]);
 
   return (
     <PageLayout>
@@ -58,48 +103,37 @@ export default function Events() {
       <section className="section-padding" style={{ background: "#091529" }}>
         <div className="max-w-4xl mx-auto">
           <FadeIn>
-            <div className="flex items-center justify-between mb-6">
+            <div className="mb-6">
+              <span className="mb-3 block text-sm font-semibold uppercase tracking-widest text-[#c9a84c]">
+                Upcoming
+              </span>
               <h2 className="font-serif text-2xl font-bold text-white">Activity Calendar</h2>
-              <div className="flex gap-2 items-center">
-                <button
-                  onClick={() => setCalMonth(Math.max(0, calMonth - 1))}
-                  disabled={calMonth === 0}
-                  className="w-8 h-8 rounded-lg border border-white/15 bg-white/5 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all disabled:opacity-30"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <span className="flex items-center px-4 text-sm font-medium text-white min-w-[100px] justify-center">{months[calMonth]}</span>
-                <button
-                  onClick={() => setCalMonth(Math.min(11, calMonth + 1))}
-                  disabled={calMonth === 11}
-                  className="w-8 h-8 rounded-lg border border-white/15 bg-white/5 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all disabled:opacity-30"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
+              <p className="mt-2 text-sm text-white/45">
+                Events are mapped by actual date and ordered by what is still to occur.
+              </p>
             </div>
           </FadeIn>
           <FadeIn delay={0.1}>
             <div className="space-y-3">
-              {events.filter((e) => e.date.toLowerCase().includes(months[calMonth].toLowerCase())).length > 0 ? (
-                events
-                  .filter((e) => e.date.toLowerCase().includes(months[calMonth].toLowerCase()))
-                  .map((event, index) => (
-                    <button
-                      key={event.id || event.title}
-                      onClick={() => setSelectedEvent(index)}
-                      className="w-full p-4 rounded-lg border border-white/10 bg-white/5 flex items-center justify-between gap-3 text-left"
-                    >
+              {upcomingEvents.length > 0 ? (
+                upcomingEvents.map(({ event, date }) => (
+                  <button
+                    key={event.id || event.title}
+                    onClick={() => setSelectedEventId(event.id || event.title)}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 p-4 text-left transition-all hover:border-[#c9a84c]/35 hover:bg-white/10"
+                  >
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <span className="text-xs font-medium" style={{ color: "#c9a84c" }}>{event.type}</span>
                         <h3 className="font-semibold text-white text-sm">{event.title}</h3>
                         <p className="text-xs text-white/40">{event.date} - {event.location}</p>
                       </div>
-                      <span className="shrink-0 text-xs px-3 py-1.5 rounded-lg border border-white/15 text-white/60">Open</span>
-                    </button>
-                  ))
+                      <CountdownBadge date={date} />
+                    </div>
+                  </button>
+                ))
               ) : (
-                <p className="text-center text-white/40 py-6 text-sm">No mapped items for {months[calMonth]}. Conference history and recurring formats are listed below.</p>
+                <p className="text-center text-white/40 py-6 text-sm">No upcoming dated events are mapped yet. Conference history and recurring formats are listed below.</p>
               )}
             </div>
           </FadeIn>
@@ -123,7 +157,7 @@ export default function Events() {
             <FadeIn key={event.id || event.title} delay={i * 0.05}>
               <div
                 className="rounded-[42px] bg-[#f7f3f2] p-4 md:p-6 transition-all hover:scale-[1.01] cursor-pointer"
-                onClick={() => setSelectedEvent(i)}
+                onClick={() => setSelectedEventId(event.id || event.title)}
               >
                 <div className="grid gap-6 md:grid-cols-[1.15fr,1fr,300px] md:items-center">
                   <div className="overflow-hidden rounded-[56px] bg-white shadow-sm">
@@ -151,7 +185,7 @@ export default function Events() {
                   </div>
                 </div>
 
-                {selectedEvent === i && (
+                {selectedEventId === (event.id || event.title) && (
                   <motion.div
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
