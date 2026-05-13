@@ -1,13 +1,29 @@
-export type MembershipTier = "student" | "professional" | "life" | "institutional" | "volunteer";
+export type MembershipTier = "student" | "life" | "institutional";
 export type MemberStatus = "pending" | "approved" | "rejected";
+export type VolunteerStatus = "not_applied" | "pending" | "approved" | "rejected";
 
 export interface LifeCertificateEditorState {
+  certificateOfX: number;
+  certificateOfY: number;
+  certificateOfFontSize: number;
+  certificateTypeX: number;
+  certificateTypeY: number;
+  certificateTypeFontSize: number;
   nameX: number;
   nameY: number;
   nameFontSize: number;
+  designationX: number;
+  designationY: number;
+  designationFontSize: number;
   detailX: number;
   detailY: number;
   detailFontSize: number;
+  membershipX: number;
+  membershipY: number;
+  membershipFontSize: number;
+  dateX: number;
+  dateY: number;
+  dateFontSize: number;
   photoX: number;
   photoY: number;
   photoRadius: number;
@@ -38,6 +54,11 @@ export interface Member {
   certificate_editor_state?: LifeCertificateEditorState;
   certificate_template_version?: number;
   certificate_submitted_at?: string;
+  volunteer_status?: VolunteerStatus;
+  volunteer_number?: number;
+  volunteer_certificate_data_url?: string;
+  volunteer_certificate_template_version?: number;
+  volunteer_applied_at?: string;
   created_at: string;
   approved_at?: string;
   issue_date?: string;
@@ -53,16 +74,12 @@ export interface SiteContent {
 
 export const MEMBERSHIP_TIERS: { value: MembershipTier; label: string; fee: string }[] = [
   { value: "student", label: "Student Member", fee: "Rs. 500 / year" },
-  { value: "professional", label: "Professional Member", fee: "Rs. 1,500 / year" },
   { value: "life", label: "Life Member", fee: "Rs. 10,000 one-time" },
   { value: "institutional", label: "Institutional Member", fee: "Rs. 5,000 / year" },
-  { value: "volunteer", label: "Volunteer", fee: "Free" },
 ];
 
 export const TIER_COLORS: Record<MembershipTier, string> = {
   student: "#3b82f6",
-  professional: "#c9a84c",
   life: "#9333ea",
   institutional: "#16a34a",
-  volunteer: "#0ea5e9",
 };

@@ -1,22 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Users, Settings, LogOut, Globe,
   Phone, Mail, MapPin, Youtube, Facebook, Twitter,
   Linkedin, Instagram, Save, ChevronRight, Menu, X,
-  CalendarDays, Plus, Trash2, Edit2, Image, FileText, Images, type LucideIcon
+  CalendarDays, Plus, Trash2, Edit2, FileText, Images, type LucideIcon
 } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { getDefaultSection, getSection, setSection } from "@/lib/contentDb";
-import { createAdminMember, getAllMembers, updateMemberStatus, deleteMember, MEMBERSHIP_TIERS } from "@/lib/membershipDb";
+import { createAdminMember, getAllMembers, updateMemberStatus, updateVolunteerStatus, deleteMember, MEMBERSHIP_TIERS } from "@/lib/membershipDb";
 import { fetchEvents, saveEvent, deleteEvent, type EventItem } from "@/lib/eventsDb";
 import { fetchBlogPosts, saveBlogPosts, type BlogPost } from "@/lib/blogDb";
 import { fetchCarouselSlides, saveCarouselSlides, type CarouselSlide } from "@/lib/carouselDb";
 import { fetchDocumentTemplates, saveDocumentTemplate, type DocumentTemplate } from "@/lib/documentTemplates";
+import { normalizeLifeCertificateEditorState } from "@/lib/certificateGenerator";
 import type { Member, MemberStatus, MembershipTier } from "@/lib/supabase";
+import type { LifeCertificateEditorState } from "@/lib/membershipTypes";
 
-type Tab = "dashboard" | "members" | "events" | "blogs" | "carousel" | "content" | "social" | "templates" | "programs_research";
+type Tab = "dashboard" | "members" | "events" | "blogs" | "carousel" | "templates" | "content" | "social" | "programs_research";
 
 export default function AdminDashboard() {
   const { isAuthenticated, logout } = useAdminAuth();
@@ -36,10 +38,10 @@ export default function AdminDashboard() {
     { id: "events", label: "Events CMS", Icon: CalendarDays },
     { id: "blogs", label: "Blog CMS", Icon: FileText },
     { id: "carousel", label: "Hero Carousel", Icon: Images },
+    { id: "templates", label: "Templates", Icon: Images },
     { id: "programs_research", label: "Program & Research", Icon: Globe },
     { id: "content", label: "Site Content", Icon: Globe },
     { id: "social", label: "Social Links", Icon: Settings },
-    { id: "templates", label: "Templates", Icon: Image },
   ];
 
   return (
@@ -113,10 +115,10 @@ export default function AdminDashboard() {
           {tab === "events" && <EventsTab />}
           {tab === "blogs" && <BlogsTab />}
           {tab === "carousel" && <CarouselTab />}
+          {tab === "templates" && <TemplatesTab />}
           {tab === "programs_research" && <ProgramsResearchTab />}
           {tab === "content" && <ContentTab />}
           {tab === "social" && <SocialTab />}
-          {tab === "templates" && <TemplatesTab />}
         </div>
       </div>
     </div>
@@ -171,10 +173,13 @@ function DashboardTab() {
 function MembersTab() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected" | "volunteer_pending">("all");
   const [addingMember, setAddingMember] = useState(false);
   const [newMember, setNewMember] = useState(() => emptyMemberForm());
   const [savingMember, setSavingMember] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [busyIds, setBusyIds] = useState<string[]>([]);
+  const [bulkWorking, setBulkWorking] = useState(false);
   const navigate = useNavigate();
 
   const load = () => {
@@ -184,26 +189,125 @@ function MembersTab() {
 
   useEffect(load, []);
 
-  const filtered = filter === "all" ? members : members.filter(m => m.status === filter);
+  const filtered = filter === "all"
+    ? members
+    : filter === "volunteer_pending"
+      ? members.filter(m => m.volunteer_status === "pending")
+      : members.filter(m => m.status === filter);
+  const selectedMembers = members.filter((member) => selectedIds.includes(member.id));
+  const pendingMembers = members.filter((member) => member.status === "pending");
+  const pendingVolunteers = members.filter((member) => member.volunteer_status === "pending");
+  const allVisibleSelected = filtered.length > 0 && filtered.every((member) => selectedIds.includes(member.id));
+
+  const setMemberBusy = (id: string, busy: boolean) => {
+    setBusyIds((current) => busy ? [...new Set([...current, id])] : current.filter((value) => value !== id));
+  };
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
+  };
+
+  const toggleVisibleSelected = () => {
+    const visibleIds = filtered.map((member) => member.id);
+    setSelectedIds((current) => {
+      if (visibleIds.every((id) => current.includes(id))) {
+        return current.filter((id) => !visibleIds.includes(id));
+      }
+      return [...new Set([...current, ...visibleIds])];
+    });
+  };
 
   const handleStatus = async (id: string, status: "approved" | "rejected") => {
-    await updateMemberStatus(id, status);
-    load();
+    const previous = members;
+    setMembers((current) => current.map((member) => member.id === id ? { ...member, status } : member));
+    setMemberBusy(id, true);
+    try {
+      await updateMemberStatus(id, status);
+    } catch (error) {
+      setMembers(previous);
+      alert(error instanceof Error ? error.message : "Failed to update member status.");
+    } finally {
+      setMemberBusy(id, false);
+    }
+  };
+
+  const handleVolunteerStatus = async (id: string, status: "approved" | "rejected") => {
+    const previous = members;
+    setMembers((current) => current.map((member) => member.id === id ? { ...member, volunteer_status: status } : member));
+    setMemberBusy(id, true);
+    try {
+      const saved = await updateVolunteerStatus(id, status);
+      setMembers((current) => current.map((member) => member.id === id ? saved : member));
+    } catch (error) {
+      setMembers(previous);
+      alert(error instanceof Error ? error.message : "Failed to update volunteer status.");
+    } finally {
+      setMemberBusy(id, false);
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this member? This cannot be undone.")) return;
-    await deleteMember(id);
-    load();
+    const previous = members;
+    setMembers((current) => current.filter((member) => member.id !== id));
+    setSelectedIds((current) => current.filter((value) => value !== id));
+    setMemberBusy(id, true);
+    try {
+      await deleteMember(id);
+    } catch (error) {
+      setMembers(previous);
+      alert(error instanceof Error ? error.message : "Failed to delete member.");
+    } finally {
+      setMemberBusy(id, false);
+    }
+  };
+
+  const handleApproveAllPending = async () => {
+    if (pendingMembers.length === 0) return;
+    if (!confirm(`Approve all ${pendingMembers.length} pending members?`)) return;
+    const pendingIds = pendingMembers.map((member) => member.id);
+    const previous = members;
+    setBulkWorking(true);
+    setBusyIds((current) => [...new Set([...current, ...pendingIds])]);
+    setMembers((current) => current.map((member) => pendingIds.includes(member.id) ? { ...member, status: "approved" } : member));
+    try {
+      await Promise.all(pendingIds.map((id) => updateMemberStatus(id, "approved")));
+    } catch (error) {
+      setMembers(previous);
+      alert(error instanceof Error ? error.message : "Failed to approve all pending members.");
+    } finally {
+      setBusyIds((current) => current.filter((id) => !pendingIds.includes(id)));
+      setBulkWorking(false);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedMembers.length === 0) return;
+    if (!confirm(`Delete ${selectedMembers.length} selected member(s)? This cannot be undone.`)) return;
+    const ids = selectedMembers.map((member) => member.id);
+    const previous = members;
+    setBulkWorking(true);
+    setBusyIds((current) => [...new Set([...current, ...ids])]);
+    setMembers((current) => current.filter((member) => !ids.includes(member.id)));
+    setSelectedIds([]);
+    try {
+      await Promise.all(ids.map((id) => deleteMember(id)));
+    } catch (error) {
+      setMembers(previous);
+      alert(error instanceof Error ? error.message : "Failed to delete selected members.");
+    } finally {
+      setBusyIds((current) => current.filter((id) => !ids.includes(id)));
+      setBulkWorking(false);
+    }
   };
 
   const handleCreateMember = async () => {
     setSavingMember(true);
     try {
-      await createAdminMember(newMember);
+      const created = await createAdminMember(newMember);
+      setMembers((current) => [created, ...current]);
       setNewMember(emptyMemberForm());
       setAddingMember(false);
-      load();
     } catch (error) {
       alert(error instanceof Error ? error.message : "Failed to create member.");
     } finally {
@@ -227,7 +331,23 @@ function MembersTab() {
           >
             <Plus size={14} /> {addingMember ? "Close Form" : "Add Member"}
           </button>
-          {(["all", "pending", "approved", "rejected"] as const).map(f => (
+          <button
+            onClick={handleApproveAllPending}
+            disabled={bulkWorking || pendingMembers.length === 0}
+            className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-40"
+            style={{ background: "#22c55e22", color: "#22c55e", border: "1px solid #22c55e44" }}
+          >
+            Approve All Pending ({pendingMembers.length})
+          </button>
+          <button
+            onClick={handleDeleteSelected}
+            disabled={bulkWorking || selectedIds.length === 0}
+            className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-40"
+            style={{ background: "#ef444422", color: "#ef4444", border: "1px solid #ef444444" }}
+          >
+            Delete Selected ({selectedIds.length})
+          </button>
+          {(["all", "pending", "approved", "rejected", "volunteer_pending"] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all"
               style={{
@@ -235,7 +355,7 @@ function MembersTab() {
                 color: filter === f ? "#c9a84c" : "rgba(255,255,255,0.5)",
                 border: filter === f ? "1px solid rgba(201,168,76,0.4)" : "1px solid transparent",
               }}
-            >{f}</button>
+            >{f === "volunteer_pending" ? `volunteers (${pendingVolunteers.length})` : f}</button>
           ))}
         </div>
       </div>
@@ -302,11 +422,22 @@ function MembersTab() {
         <p className="text-white/40 text-center py-12">No members found.</p>
       ) : (
         <div className="space-y-3">
+          <label className="mb-2 flex w-fit items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/60">
+            <input type="checkbox" checked={allVisibleSelected} onChange={toggleVisibleSelected} className="accent-[#c9a84c]" />
+            Select visible
+          </label>
           {filtered.map(m => (
             <div key={m.id}
               className="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-4"
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
             >
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(m.id)}
+                onChange={() => toggleSelected(m.id)}
+                className="accent-[#c9a84c]"
+                aria-label={`Select ${m.name}`}
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-white">{m.name}</span>
@@ -318,6 +449,12 @@ function MembersTab() {
                     style={{ background: "rgba(201,168,76,0.15)", color: "#c9a84c" }}>
                     {m.membership_tier}
                   </span>
+                  {m.volunteer_status && m.volunteer_status !== "not_applied" && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium capitalize"
+                      style={{ background: m.volunteer_status === "approved" ? "#22c55e22" : m.volunteer_status === "rejected" ? "#ef444422" : "#f9731622", color: m.volunteer_status === "approved" ? "#22c55e" : m.volunteer_status === "rejected" ? "#ef4444" : "#f97316" }}>
+                      volunteer {m.volunteer_status}{m.volunteer_number ? ` #${m.volunteer_number}` : ""}
+                    </span>
+                  )}
                 </div>
                 <p className="text-white/40 text-xs mt-1 truncate">{m.email} · {m.status === "approved" ? m.membership_id : (m.application_id || m.membership_id)}</p>
                 <p className="text-white/40 text-xs">{m.designation} — {m.institution}</p>
@@ -326,14 +463,32 @@ function MembersTab() {
                 {m.status === "pending" && (
                   <>
                     <button onClick={() => handleStatus(m.id, "approved")}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
+                      disabled={busyIds.includes(m.id)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90 disabled:opacity-40"
                       style={{ background: "#22c55e22", color: "#22c55e", border: "1px solid #22c55e44" }}>
-                      Approve
+                      {busyIds.includes(m.id) ? "Working..." : "Approve"}
                     </button>
                     <button onClick={() => handleStatus(m.id, "rejected")}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
+                      disabled={busyIds.includes(m.id)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90 disabled:opacity-40"
                       style={{ background: "#ef444422", color: "#ef4444", border: "1px solid #ef444444" }}>
                       Reject
+                    </button>
+                  </>
+                )}
+                {m.volunteer_status === "pending" && (
+                  <>
+                    <button onClick={() => handleVolunteerStatus(m.id, "approved")}
+                      disabled={busyIds.includes(m.id)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90 disabled:opacity-40"
+                      style={{ background: "#22c55e22", color: "#22c55e", border: "1px solid #22c55e44" }}>
+                      Approve Volunteer
+                    </button>
+                    <button onClick={() => handleVolunteerStatus(m.id, "rejected")}
+                      disabled={busyIds.includes(m.id)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90 disabled:opacity-40"
+                      style={{ background: "#ef444422", color: "#ef4444", border: "1px solid #ef444444" }}>
+                      Reject Volunteer
                     </button>
                   </>
                 )}
@@ -344,7 +499,8 @@ function MembersTab() {
                   View / Certificate
                 </button>
                 <button onClick={() => handleDelete(m.id)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
+                  disabled={busyIds.includes(m.id)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90 disabled:opacity-40"
                   style={{ background: "#ef444410", color: "#ef4444aa", border: "1px solid #ef444422" }}>
                   Delete
                 </button>
@@ -1017,6 +1173,69 @@ function TemplatesTab() {
     setTemplates((current) => current.map((template) => template.key === key ? { ...template, ...patch } : template));
   };
 
+  const getLifeSettings = (template: DocumentTemplate) => {
+    const source = template.field_map?.lifeCertificate && typeof template.field_map.lifeCertificate === "object"
+      ? template.field_map.lifeCertificate as Record<string, unknown>
+      : {};
+    return {
+      draftTemplateUrl: typeof source.draftTemplateUrl === "string" && source.draftTemplateUrl ? source.draftTemplateUrl : "/membership/No_sign-01.png",
+      finalTemplateUrl: typeof source.finalTemplateUrl === "string" && source.finalTemplateUrl ? source.finalTemplateUrl : template.template_url || "/membership/withsign-01.png",
+      editorState: normalizeLifeCertificateEditorState(source.editorState as Partial<LifeCertificateEditorState> | undefined),
+    };
+  };
+
+  const updateLifeSettings = (template: DocumentTemplate, patch: Partial<ReturnType<typeof getLifeSettings>>) => {
+    const current = getLifeSettings(template);
+    const nextSettings = {
+      ...current,
+      ...patch,
+      editorState: patch.editorState ? normalizeLifeCertificateEditorState(patch.editorState) : current.editorState,
+    };
+    const nextFieldMap = {
+      ...(template.field_map || {}),
+      lifeCertificate: nextSettings,
+    };
+    updateTemplate(template.key, {
+      template_url: nextSettings.finalTemplateUrl,
+      field_map: nextFieldMap,
+    });
+    setDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [template.key]: JSON.stringify(nextFieldMap, null, 2),
+    }));
+  };
+
+  const updateLifeEditor = (template: DocumentTemplate, key: keyof LifeCertificateEditorState, value: number) => {
+    const settings = getLifeSettings(template);
+    updateLifeSettings(template, {
+      editorState: {
+        ...settings.editorState,
+        [key]: value,
+      },
+    });
+  };
+
+  const readUpload = (file: File | null, onReady: (dataUrl: string) => void) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onReady(String(reader.result));
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveLifeCertificate = async (template: DocumentTemplate) => {
+    setMessage("");
+    setSavingKey(template.key);
+    try {
+      await saveDocumentTemplate(template);
+      setMessage("Certificate defaults saved for all generated certificates.");
+      load();
+    } catch {
+      setMessage("Could not save certificate defaults.");
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <h1 className="text-2xl font-bold text-white mb-3">Document Templates</h1>
@@ -1030,22 +1249,37 @@ function TemplatesTab() {
         <div className="space-y-6">
           {templates.map((template) => (
             <Section key={template.key} title={template.label}>
-              <Field label="Label" value={template.label} onChange={v => updateTemplate(template.key, { label: v })} />
-              <Field label="Canva Export / Template Image URL" value={template.template_url} onChange={v => updateTemplate(template.key, { template_url: v })} />
-              <Field
-                label="Field Map JSON"
-                textarea
-                value={drafts[template.key] || "{}"}
-                onChange={v => setDrafts(current => ({ ...current, [template.key]: v }))}
-              />
-              <button
-                onClick={() => handleSave(template)}
-                disabled={savingKey === template.key}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all hover:-translate-y-0.5 disabled:opacity-60"
-                style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)", color: "#0d1b3e" }}
-              >
-                <Save size={16} /> {savingKey === template.key ? "Saving..." : "Save Template"}
-              </button>
+              {template.key === "certificate" ? (
+                <LifeCertificateTemplateEditor
+                  template={template}
+                  settings={getLifeSettings(template)}
+                  saving={savingKey === template.key}
+                  onLabelChange={(label) => updateTemplate(template.key, { label })}
+                  onUploadDraft={(file) => readUpload(file, (dataUrl) => updateLifeSettings(template, { draftTemplateUrl: dataUrl }))}
+                  onUploadFinal={(file) => readUpload(file, (dataUrl) => updateLifeSettings(template, { finalTemplateUrl: dataUrl }))}
+                  onEditorChange={(key, value) => updateLifeEditor(template, key, value)}
+                  onSave={() => handleSaveLifeCertificate(template)}
+                />
+              ) : (
+                <>
+                  <Field label="Label" value={template.label} onChange={v => updateTemplate(template.key, { label: v })} />
+                  <Field label="Canva Export / Template Image URL" value={template.template_url} onChange={v => updateTemplate(template.key, { template_url: v })} />
+                  <Field
+                    label="Field Map JSON"
+                    textarea
+                    value={drafts[template.key] || "{}"}
+                    onChange={v => setDrafts(current => ({ ...current, [template.key]: v }))}
+                  />
+                  <button
+                    onClick={() => handleSave(template)}
+                    disabled={savingKey === template.key}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all hover:-translate-y-0.5 disabled:opacity-60"
+                    style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)", color: "#0d1b3e" }}
+                  >
+                    <Save size={16} /> {savingKey === template.key ? "Saving..." : "Save Template"}
+                  </button>
+                </>
+              )}
             </Section>
           ))}
         </div>
@@ -1055,6 +1289,192 @@ function TemplatesTab() {
 }
 
 // ─────────── Programs & Research tab ────────────────────────────────────
+function LifeCertificateTemplateEditor({
+  template,
+  settings,
+  saving,
+  onLabelChange,
+  onUploadDraft,
+  onUploadFinal,
+  onEditorChange,
+  onSave,
+}: {
+  template: DocumentTemplate;
+  settings: { draftTemplateUrl: string; finalTemplateUrl: string; editorState: LifeCertificateEditorState };
+  saving: boolean;
+  onLabelChange: (label: string) => void;
+  onUploadDraft: (file: File | null) => void;
+  onUploadFinal: (file: File | null) => void;
+  onEditorChange: (key: keyof LifeCertificateEditorState, value: number) => void;
+  onSave: () => void;
+}) {
+  const uploadCls = "w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 file:mr-4 file:rounded-lg file:border-0 file:bg-[#c9a84c] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[#0d1b3e]";
+  const previewRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  const beginDrag = (event: ReactPointerEvent, xKey: keyof LifeCertificateEditorState, yKey: keyof LifeCertificateEditorState) => {
+    event.preventDefault();
+    const move = (pointerEvent: PointerEvent) => {
+      const image = imageRef.current;
+      if (!image) return;
+      const rect = image.getBoundingClientRect();
+      const naturalWidth = image.naturalWidth || 1876;
+      const naturalHeight = image.naturalHeight || 1438;
+      const x = Math.max(0, Math.min(naturalWidth, ((pointerEvent.clientX - rect.left) / rect.width) * naturalWidth));
+      const y = Math.max(0, Math.min(naturalHeight, ((pointerEvent.clientY - rect.top) / rect.height) * naturalHeight));
+      onEditorChange(xKey, Math.round(x));
+      onEditorChange(yKey, Math.round(y));
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+  };
+
+  const markerStyle = (x: number, y: number) => {
+    const image = imageRef.current;
+    const width = image?.naturalWidth || 1876;
+    const height = image?.naturalHeight || 1438;
+    return { left: `${(x / width) * 100}%`, top: `${(y / height) * 100}%` };
+  };
+
+  return (
+    <div className="space-y-6">
+      <Field label="Label" value={template.label} onChange={onLabelChange} />
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div>
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/35">Certificate without sign</label>
+          <input type="file" accept="image/*" className={uploadCls} onChange={(event) => onUploadDraft(event.target.files?.[0] || null)} />
+          {settings.draftTemplateUrl && <img src={settings.draftTemplateUrl} alt="Unsigned certificate template" className="mt-3 rounded-xl border border-white/10" />}
+        </div>
+        <div>
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/35">Certificate with sign</label>
+          <input type="file" accept="image/*" className={uploadCls} onChange={(event) => onUploadFinal(event.target.files?.[0] || null)} />
+          {settings.finalTemplateUrl && <img src={settings.finalTemplateUrl} alt="Signed certificate template" className="mt-3 rounded-xl border border-white/10" />}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-sm font-semibold text-white">Drag Placeholder Positions</h3>
+        <div ref={previewRef} className="relative overflow-hidden rounded-xl border border-white/10 bg-black/20">
+          <img ref={imageRef} src={settings.finalTemplateUrl} alt="Certificate placement editor" className="block w-full select-none" draggable={false} />
+          <DragMarker label="OF" style={markerStyle(settings.editorState.certificateOfX, settings.editorState.certificateOfY)} onPointerDown={(event) => beginDrag(event, "certificateOfX", "certificateOfY")} />
+          <DragMarker label="Type" style={markerStyle(settings.editorState.certificateTypeX, settings.editorState.certificateTypeY)} onPointerDown={(event) => beginDrag(event, "certificateTypeX", "certificateTypeY")} />
+          <DragMarker label="Name" style={markerStyle(settings.editorState.nameX, settings.editorState.nameY)} onPointerDown={(event) => beginDrag(event, "nameX", "nameY")} />
+          <DragMarker label="Designation" style={markerStyle(settings.editorState.designationX, settings.editorState.designationY)} onPointerDown={(event) => beginDrag(event, "designationX", "designationY")} />
+          <DragMarker label="Detail" style={markerStyle(settings.editorState.detailX, settings.editorState.detailY)} onPointerDown={(event) => beginDrag(event, "detailX", "detailY")} />
+          <DragMarker label="LISA No." style={markerStyle(settings.editorState.membershipX, settings.editorState.membershipY)} onPointerDown={(event) => beginDrag(event, "membershipX", "membershipY")} />
+          <DragMarker label="Date" style={markerStyle(settings.editorState.dateX, settings.editorState.dateY)} onPointerDown={(event) => beginDrag(event, "dateX", "dateY")} />
+          <DragMarker label="Photo" style={markerStyle(settings.editorState.photoX, settings.editorState.photoY)} onPointerDown={(event) => beginDrag(event, "photoX", "photoY")} />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-sm font-semibold text-white">Default Placeholder Centers</h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <TemplatePlacementGroup title="OF text">
+            <TemplatePlacementInput label="X" value={settings.editorState.certificateOfX} onChange={(value) => onEditorChange("certificateOfX", value)} />
+            <TemplatePlacementInput label="Y" value={settings.editorState.certificateOfY} onChange={(value) => onEditorChange("certificateOfY", value)} />
+            <TemplatePlacementInput label="Size" value={settings.editorState.certificateOfFontSize} onChange={(value) => onEditorChange("certificateOfFontSize", value)} />
+          </TemplatePlacementGroup>
+          <TemplatePlacementGroup title="Membership type">
+            <TemplatePlacementInput label="X" value={settings.editorState.certificateTypeX} onChange={(value) => onEditorChange("certificateTypeX", value)} />
+            <TemplatePlacementInput label="Y" value={settings.editorState.certificateTypeY} onChange={(value) => onEditorChange("certificateTypeY", value)} />
+            <TemplatePlacementInput label="Size" value={settings.editorState.certificateTypeFontSize} onChange={(value) => onEditorChange("certificateTypeFontSize", value)} />
+          </TemplatePlacementGroup>
+          <TemplatePlacementGroup title="Name">
+            <TemplatePlacementInput label="X" value={settings.editorState.nameX} onChange={(value) => onEditorChange("nameX", value)} />
+            <TemplatePlacementInput label="Y" value={settings.editorState.nameY} onChange={(value) => onEditorChange("nameY", value)} />
+            <TemplatePlacementInput label="Size" value={settings.editorState.nameFontSize} onChange={(value) => onEditorChange("nameFontSize", value)} />
+          </TemplatePlacementGroup>
+          <TemplatePlacementGroup title="Designation">
+            <TemplatePlacementInput label="X" value={settings.editorState.designationX} onChange={(value) => onEditorChange("designationX", value)} />
+            <TemplatePlacementInput label="Y" value={settings.editorState.designationY} onChange={(value) => onEditorChange("designationY", value)} />
+            <TemplatePlacementInput label="Size" value={settings.editorState.designationFontSize} onChange={(value) => onEditorChange("designationFontSize", value)} />
+          </TemplatePlacementGroup>
+          <TemplatePlacementGroup title="Specify Title / Institution / Place">
+            <TemplatePlacementInput label="X" value={settings.editorState.detailX} onChange={(value) => onEditorChange("detailX", value)} />
+            <TemplatePlacementInput label="Y" value={settings.editorState.detailY} onChange={(value) => onEditorChange("detailY", value)} />
+            <TemplatePlacementInput label="Size" value={settings.editorState.detailFontSize} onChange={(value) => onEditorChange("detailFontSize", value)} />
+          </TemplatePlacementGroup>
+          <TemplatePlacementGroup title="LISA number">
+            <TemplatePlacementInput label="X" value={settings.editorState.membershipX} onChange={(value) => onEditorChange("membershipX", value)} />
+            <TemplatePlacementInput label="Y" value={settings.editorState.membershipY} onChange={(value) => onEditorChange("membershipY", value)} />
+            <TemplatePlacementInput label="Size" value={settings.editorState.membershipFontSize} onChange={(value) => onEditorChange("membershipFontSize", value)} />
+          </TemplatePlacementGroup>
+          <TemplatePlacementGroup title="Issue date">
+            <TemplatePlacementInput label="X" value={settings.editorState.dateX} onChange={(value) => onEditorChange("dateX", value)} />
+            <TemplatePlacementInput label="Y" value={settings.editorState.dateY} onChange={(value) => onEditorChange("dateY", value)} />
+            <TemplatePlacementInput label="Size" value={settings.editorState.dateFontSize} onChange={(value) => onEditorChange("dateFontSize", value)} />
+          </TemplatePlacementGroup>
+          <TemplatePlacementGroup title="Photo">
+            <TemplatePlacementInput label="X" value={settings.editorState.photoX} onChange={(value) => onEditorChange("photoX", value)} />
+            <TemplatePlacementInput label="Y" value={settings.editorState.photoY} onChange={(value) => onEditorChange("photoY", value)} />
+            <TemplatePlacementInput label="Radius" value={settings.editorState.photoRadius} onChange={(value) => onEditorChange("photoRadius", value)} />
+          </TemplatePlacementGroup>
+        </div>
+      </div>
+
+      <button
+        onClick={onSave}
+        disabled={saving}
+        className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all hover:-translate-y-0.5 disabled:opacity-60"
+        style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)", color: "#0d1b3e" }}
+      >
+        <Save size={16} /> {saving ? "Saving..." : "Save Certificate Defaults"}
+      </button>
+    </div>
+  );
+}
+
+function TemplatePlacementGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/35">{title}</div>
+      <div className="grid grid-cols-3 gap-2">{children}</div>
+    </div>
+  );
+}
+
+function DragMarker({
+  label,
+  style,
+  onPointerDown,
+}: {
+  label: string;
+  style: CSSProperties;
+  onPointerDown: (event: ReactPointerEvent) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onPointerDown={onPointerDown}
+      className="absolute z-10 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full border border-white bg-[#0d1b3e] px-2.5 py-1 text-[10px] font-semibold text-white shadow-lg active:cursor-grabbing"
+      style={style}
+      title={`Drag ${label}`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function TemplatePlacementInput({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[10px] uppercase tracking-wider text-white/30">{label}</span>
+      <input
+        type="number"
+        value={Math.round(value)}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="w-full rounded-lg border border-white/10 bg-black/15 px-2 py-2 text-xs text-white outline-none focus:border-[#c9a84c]/50"
+      />
+    </label>
+  );
+}
+
 function ProgramsResearchTab() {
   const [data, setData] = useState(() => ({
     ...getDefaultSection("programs"),

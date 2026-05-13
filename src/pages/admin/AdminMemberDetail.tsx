@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Award, Check, CreditCard, Download, Printer, X } from "lucide-react";
+import { ArrowLeft, Award, Check, CreditCard, Download, Printer, Save, X } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { getMemberById, updateMemberStatus } from "@/lib/membershipDb";
-import { generateCertificate, generateIdCard, printImage } from "@/lib/certificateGenerator";
-import type { Member } from "@/lib/membershipTypes";
+import { getMemberById, updateMemberCertificateEditorState, updateMemberStatus, updateVolunteerStatus } from "@/lib/membershipDb";
+import { generateCertificate, generateIdCard, generateVolunteerCertificate, getLifeCertificateSettings, normalizeLifeCertificateEditorState, printImage } from "@/lib/certificateGenerator";
+import type { LifeCertificateEditorState, Member } from "@/lib/membershipTypes";
 
 export default function AdminMemberDetail() {
   const { isAuthenticated } = useAdminAuth();
@@ -14,10 +14,13 @@ export default function AdminMemberDetail() {
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
   const [certUrl, setCertUrl] = useState<string | null>(null);
+  const [volunteerCertUrl, setVolunteerCertUrl] = useState<string | null>(null);
   const [cardFront, setCardFront] = useState<string | null>(null);
   const [cardBack, setCardBack] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
-  const [activePreview, setActivePreview] = useState<"draft" | "certificate" | "card">("draft");
+  const [activePreview, setActivePreview] = useState<"draft" | "certificate" | "volunteer" | "card">("draft");
+  const [editorState, setEditorState] = useState<LifeCertificateEditorState>(normalizeLifeCertificateEditorState());
+  const [placementDirty, setPlacementDirty] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) navigate("/admin");
@@ -27,7 +30,10 @@ export default function AdminMemberDetail() {
     if (!id) return;
     setLoading(true);
     const current = await getMemberById(id);
+    const templateSettings = await getLifeCertificateSettings();
     setMember(current);
+    setEditorState(normalizeLifeCertificateEditorState(templateSettings.editorState));
+    setPlacementDirty(false);
     setLoading(false);
   }, [id]);
 
@@ -38,6 +44,9 @@ export default function AdminMemberDetail() {
   const handleApprove = async () => {
     if (!member) return;
     setWorking(true);
+    if (placementDirty) {
+      await updateMemberCertificateEditorState(member.id, editorState);
+    }
     await updateMemberStatus(member.id, "approved");
     await load();
     setWorking(false);
@@ -51,13 +60,34 @@ export default function AdminMemberDetail() {
     setWorking(false);
   };
 
+  const handleVolunteerStatus = async (status: "approved" | "rejected") => {
+    if (!member) return;
+    setWorking(true);
+    try {
+      const saved = await updateVolunteerStatus(member.id, status);
+      setMember(saved);
+      setVolunteerCertUrl(null);
+    } finally {
+      setWorking(false);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!member) return;
     setWorking(true);
     try {
+      const templateSettings = await getLifeCertificateSettings();
+      const generationEditorState = placementDirty
+        ? editorState
+        : normalizeLifeCertificateEditorState(templateSettings.editorState);
+      const savedMember = placementDirty
+        ? await updateMemberCertificateEditorState(member.id, generationEditorState)
+        : member;
+      setMember(savedMember);
+      setEditorState(generationEditorState);
       const [cert, { front, back }] = await Promise.all([
-        generateCertificate(member, { editorState: member.certificate_editor_state }),
-        generateIdCard(member),
+        generateCertificate(savedMember, { editorState: generationEditorState }),
+        generateIdCard(savedMember),
       ]);
       setCertUrl(cert);
       setCardFront(front);
@@ -65,6 +95,46 @@ export default function AdminMemberDetail() {
     } finally {
       setWorking(false);
     }
+  };
+
+  const handleGenerateVolunteerCertificate = async () => {
+    if (!member || member.volunteer_status !== "approved") return;
+    setWorking(true);
+    try {
+      const templateSettings = await getLifeCertificateSettings();
+      const generationEditorState = placementDirty
+        ? editorState
+        : normalizeLifeCertificateEditorState(templateSettings.editorState);
+      const savedMember = placementDirty
+        ? await updateMemberCertificateEditorState(member.id, generationEditorState)
+        : member;
+      setMember(savedMember);
+      setEditorState(generationEditorState);
+      const cert = await generateVolunteerCertificate(savedMember, { editorState: generationEditorState });
+      setVolunteerCertUrl(cert);
+      setActivePreview("volunteer");
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const savePlacement = async () => {
+    if (!member) return;
+    setWorking(true);
+    try {
+      const savedMember = await updateMemberCertificateEditorState(member.id, editorState);
+      setMember(savedMember);
+      const draft = await generateCertificate(savedMember, { editorState });
+      setCertUrl(draft);
+      setActivePreview("certificate");
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const updatePlacement = (key: keyof LifeCertificateEditorState, value: number) => {
+    setEditorState((current) => ({ ...current, [key]: value }));
+    setPlacementDirty(true);
   };
 
   const downloadImage = (url: string, filename: string) => {
@@ -109,6 +179,8 @@ export default function AdminMemberDetail() {
                 { label: "Designation", value: member.designation },
                 { label: "Institution", value: member.institution },
                 { label: "Status", value: member.status },
+                { label: "Volunteer Status", value: member.volunteer_status || "not_applied" },
+                { label: "Volunteer No.", value: member.volunteer_number || "-" },
                 { label: "Submitted Draft", value: member.certificate_submitted_at ? new Date(member.certificate_submitted_at).toLocaleString("en-IN") : "Not submitted" },
               ].map(({ label, value }) => (
                 <div key={label} className="mb-3">
@@ -129,10 +201,84 @@ export default function AdminMemberDetail() {
               </div>
             )}
 
+            {member.volunteer_status === "pending" && (
+              <div className="flex gap-3">
+                <button onClick={() => handleVolunteerStatus("approved")} disabled={working} className="flex-1 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-60" style={{ background: "#22c55e22", color: "#22c55e", border: "1px solid #22c55e44" }}>
+                  <Check size={16} /> Approve Volunteer
+                </button>
+                <button onClick={() => handleVolunteerStatus("rejected")} disabled={working} className="flex-1 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-60" style={{ background: "#ef444422", color: "#ef4444", border: "1px solid #ef444444" }}>
+                  <X size={16} /> Reject
+                </button>
+              </div>
+            )}
+
+            {member.membership_tier && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Certificate Placeholder Centers</h3>
+                    <p className="mt-1 text-xs text-white/40">Adjust X/Y centers and font sizes for the certificate text.</p>
+                  </div>
+                  <button onClick={savePlacement} disabled={working} className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-all disabled:opacity-60" style={{ background: "rgba(201,168,76,0.16)", color: "#c9a84c", border: "1px solid rgba(201,168,76,0.35)" }}>
+                    <Save size={13} /> Save
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <PlacementGroup title="OF text">
+                    <PlacementInput label="X" value={editorState.certificateOfX} onChange={(value) => updatePlacement("certificateOfX", value)} />
+                    <PlacementInput label="Y" value={editorState.certificateOfY} onChange={(value) => updatePlacement("certificateOfY", value)} />
+                    <PlacementInput label="Size" value={editorState.certificateOfFontSize} onChange={(value) => updatePlacement("certificateOfFontSize", value)} />
+                  </PlacementGroup>
+                  <PlacementGroup title="Type under CERTIFICATE">
+                    <PlacementInput label="X" value={editorState.certificateTypeX} onChange={(value) => updatePlacement("certificateTypeX", value)} />
+                    <PlacementInput label="Y" value={editorState.certificateTypeY} onChange={(value) => updatePlacement("certificateTypeY", value)} />
+                    <PlacementInput label="Size" value={editorState.certificateTypeFontSize} onChange={(value) => updatePlacement("certificateTypeFontSize", value)} />
+                  </PlacementGroup>
+                  <PlacementGroup title="Name">
+                    <PlacementInput label="X" value={editorState.nameX} onChange={(value) => updatePlacement("nameX", value)} />
+                    <PlacementInput label="Y" value={editorState.nameY} onChange={(value) => updatePlacement("nameY", value)} />
+                    <PlacementInput label="Size" value={editorState.nameFontSize} onChange={(value) => updatePlacement("nameFontSize", value)} />
+                  </PlacementGroup>
+                  <PlacementGroup title="Designation">
+                    <PlacementInput label="X" value={editorState.designationX} onChange={(value) => updatePlacement("designationX", value)} />
+                    <PlacementInput label="Y" value={editorState.designationY} onChange={(value) => updatePlacement("designationY", value)} />
+                    <PlacementInput label="Size" value={editorState.designationFontSize} onChange={(value) => updatePlacement("designationFontSize", value)} />
+                  </PlacementGroup>
+                  <PlacementGroup title="Specify Title / Institution / Place">
+                    <PlacementInput label="X" value={editorState.detailX} onChange={(value) => updatePlacement("detailX", value)} />
+                    <PlacementInput label="Y" value={editorState.detailY} onChange={(value) => updatePlacement("detailY", value)} />
+                    <PlacementInput label="Size" value={editorState.detailFontSize} onChange={(value) => updatePlacement("detailFontSize", value)} />
+                  </PlacementGroup>
+                  <PlacementGroup title="LISA Number">
+                    <PlacementInput label="X" value={editorState.membershipX} onChange={(value) => updatePlacement("membershipX", value)} />
+                    <PlacementInput label="Y" value={editorState.membershipY} onChange={(value) => updatePlacement("membershipY", value)} />
+                    <PlacementInput label="Size" value={editorState.membershipFontSize} onChange={(value) => updatePlacement("membershipFontSize", value)} />
+                  </PlacementGroup>
+                  <PlacementGroup title="Issue Date">
+                    <PlacementInput label="X" value={editorState.dateX} onChange={(value) => updatePlacement("dateX", value)} />
+                    <PlacementInput label="Y" value={editorState.dateY} onChange={(value) => updatePlacement("dateY", value)} />
+                    <PlacementInput label="Size" value={editorState.dateFontSize} onChange={(value) => updatePlacement("dateFontSize", value)} />
+                  </PlacementGroup>
+                  <PlacementGroup title="Photo">
+                    <PlacementInput label="X" value={editorState.photoX} onChange={(value) => updatePlacement("photoX", value)} />
+                    <PlacementInput label="Y" value={editorState.photoY} onChange={(value) => updatePlacement("photoY", value)} />
+                    <PlacementInput label="Radius" value={editorState.photoRadius} onChange={(value) => updatePlacement("photoRadius", value)} />
+                  </PlacementGroup>
+                </div>
+              </motion.div>
+            )}
+
             {member.status === "approved" && (
               <button onClick={handleGenerate} disabled={working} className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-60" style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)", color: "#0d1b3e" }}>
                 <Award size={16} />
                 {working ? "Generating..." : "Generate Final Certificate & ID Card"}
+              </button>
+            )}
+
+            {member.volunteer_status === "approved" && (
+              <button onClick={handleGenerateVolunteerCertificate} disabled={working} className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-60" style={{ background: "rgba(201,168,76,0.16)", color: "#f0d080", border: "1px solid rgba(201,168,76,0.35)" }}>
+                <Award size={16} />
+                {working ? "Generating..." : "Generate Volunteer Certificate"}
               </button>
             )}
           </div>
@@ -142,6 +288,7 @@ export default function AdminMemberDetail() {
               {[
                 { id: "draft" as const, label: "Submitted Draft", Icon: Award, enabled: !!member.certificate_draft_data_url },
                 { id: "certificate" as const, label: "Final Certificate", Icon: Award, enabled: !!certUrl },
+                { id: "volunteer" as const, label: "Volunteer Certificate", Icon: Award, enabled: !!volunteerCertUrl },
                 { id: "card" as const, label: "ID Card", Icon: CreditCard, enabled: !!cardFront && !!cardBack },
               ].map(({ id, label, Icon, enabled }) => (
                 <button key={id} onClick={() => enabled && setActivePreview(id)} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all" style={{ background: activePreview === id ? "rgba(201,168,76,0.2)" : "rgba(255,255,255,0.05)", color: enabled ? (activePreview === id ? "#c9a84c" : "rgba(255,255,255,0.75)") : "rgba(255,255,255,0.25)", border: activePreview === id ? "1px solid rgba(201,168,76,0.4)" : "1px solid transparent" }}>
@@ -155,6 +302,24 @@ export default function AdminMemberDetail() {
                 <img src={member.certificate_draft_data_url} alt="Submitted draft" className="w-full rounded-xl border border-white/10" />
               ) : (
                 <div className="flex flex-col items-center justify-center h-64 text-white/30"><Award size={40} className="mb-4 opacity-20" /><p className="text-sm">No draft has been submitted yet.</p></div>
+              )
+            )}
+
+            {activePreview === "volunteer" && (
+              volunteerCertUrl ? (
+                <>
+                  <img src={volunteerCertUrl} alt="Volunteer Certificate Preview" className="w-full rounded-xl border border-white/10 mb-4" />
+                  <div className="flex gap-3 flex-wrap">
+                    <button onClick={() => downloadImage(volunteerCertUrl, `volunteer-certificate-${member.volunteer_number || member.membership_id}.jpg`)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-80" style={{ background: "rgba(255,255,255,0.08)", color: "#fff" }}>
+                      <Download size={14} /> Download JPG
+                    </button>
+                    <button onClick={() => printImage(volunteerCertUrl, "LIS Academy Volunteer Certificate")} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-80" style={{ background: "rgba(255,255,255,0.08)", color: "#fff" }}>
+                      <Printer size={14} /> Print
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-64 text-white/30"><Award size={40} className="mb-4 opacity-20" /><p className="text-sm">Generate the volunteer certificate to preview it here.</p></div>
               )
             )}
 
@@ -200,5 +365,28 @@ export default function AdminMemberDetail() {
         </div>
       </div>
     </div>
+  );
+}
+
+function PlacementGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/35">{title}</div>
+      <div className="grid grid-cols-3 gap-2">{children}</div>
+    </div>
+  );
+}
+
+function PlacementInput({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[10px] uppercase tracking-wider text-white/30">{label}</span>
+      <input
+        type="number"
+        value={Math.round(value)}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs text-white outline-none focus:border-[#c9a84c]/50"
+      />
+    </label>
   );
 }

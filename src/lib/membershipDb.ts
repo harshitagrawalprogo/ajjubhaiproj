@@ -1,6 +1,6 @@
 import { apiRequest, clearMemberToken, getMemberToken, setMemberToken, getAdminToken, setAdminToken, clearAdminToken } from "./api";
-import type { Member, MembershipTier, MemberStatus, LifeCertificateEditorState } from "./membershipTypes";
-import { LIFE_CERTIFICATE_TEMPLATE_VERSION } from "./certificateGenerator";
+import type { Member, MembershipTier, MemberStatus, VolunteerStatus, LifeCertificateEditorState } from "./membershipTypes";
+import { LIFE_CERTIFICATE_TEMPLATE_VERSION, VOLUNTEER_CERTIFICATE_TEMPLATE_VERSION } from "./certificateGenerator";
 export { MEMBERSHIP_TIERS, TIER_COLORS } from "./membershipTypes";
 
 export interface CreateMemberInput {
@@ -131,6 +131,27 @@ export async function updateMemberStatus(id: string, status: MemberStatus): Prom
   });
 }
 
+export async function updateVolunteerStatus(id: string, status: Exclude<VolunteerStatus, "not_applied">): Promise<Member> {
+  const response = await apiRequest<{ member: Member }>(`/api/admin/members/${id}/volunteer-status`, {
+    method: "PATCH",
+    headers: adminHeaders(),
+    body: JSON.stringify({ status }),
+  });
+  return response.member;
+}
+
+export async function updateMemberCertificateEditorState(
+  id: string,
+  certificate_editor_state: LifeCertificateEditorState,
+): Promise<Member> {
+  const response = await apiRequest<{ member: Member }>(`/api/admin/members/${id}/certificate-editor`, {
+    method: "PATCH",
+    headers: adminHeaders(),
+    body: JSON.stringify({ certificate_editor_state }),
+  });
+  return response.member;
+}
+
 export async function updateMember(): Promise<void> {
   throw new Error("Member updates are not implemented in this flow yet.");
 }
@@ -160,9 +181,24 @@ export async function saveMemberCertificate(certificate_data_url: string): Promi
   return response;
 }
 
+export async function saveVolunteerCertificate(volunteer_certificate_data_url: string): Promise<{ saved: true; volunteer_certificate_template_version: number }> {
+  const token = getMemberToken();
+  if (!token) {
+    throw new Error("Member authentication required.");
+  }
+
+  return apiRequest<{ saved: true; volunteer_certificate_template_version: number }>("/api/members/me/volunteer-certificate", {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      volunteer_certificate_data_url,
+      volunteer_certificate_template_version: VOLUNTEER_CERTIFICATE_TEMPLATE_VERSION,
+    }),
+  });
+}
+
 export async function saveMemberCertificateDraft(
   certificate_draft_data_url: string,
-  certificate_editor_state: LifeCertificateEditorState,
   submit_for_review: boolean,
 ): Promise<{ saved: true; submitted_at?: string }> {
   const token = getMemberToken();
@@ -175,8 +211,21 @@ export async function saveMemberCertificateDraft(
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({
       certificate_draft_data_url,
-      certificate_editor_state,
       submit_for_review,
     }),
   });
+}
+
+export async function applyForVolunteer(): Promise<Member> {
+  const token = getMemberToken();
+  if (!token) {
+    throw new Error("Member authentication required.");
+  }
+
+  const response = await apiRequest<{ member: Member }>("/api/members/me/volunteer", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return response.member;
 }

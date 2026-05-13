@@ -34,8 +34,9 @@ app.use((req, res, next) => {
   next();
 });
 
-const MEMBERSHIP_TIERS = new Set(["student", "professional", "life", "institutional", "volunteer"]);
+const MEMBERSHIP_TIERS = new Set(["student", "life", "institutional"]);
 const MEMBER_STATUSES = new Set(["pending", "approved", "rejected"]);
+const VOLUNTEER_STATUSES = new Set(["pending", "approved", "rejected"]);
 const MEMBER_CATEGORIES = new Set([
   "Librarian / Library Staff",
   "LIS Teacher",
@@ -46,7 +47,7 @@ const MEMBER_CATEGORIES = new Set([
 ]);
 
 const TEMPLATE_KEYS = new Set(["certificate", "id_front", "id_back"]);
-const LIFE_CERTIFICATE_TEMPLATE_VERSION = 4;
+const LIFE_CERTIFICATE_TEMPLATE_VERSION = 9;
 
 async function ensureMemberDocumentColumns() {
   await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_data_url TEXT`;
@@ -55,7 +56,13 @@ async function ensureMemberDocumentColumns() {
   await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_draft_data_url TEXT`;
   await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_editor_state JSONB`;
   await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_submitted_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS volunteer_status TEXT DEFAULT 'not_applied'`;
+  await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS volunteer_applied_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS volunteer_number INTEGER`;
+  await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS volunteer_certificate_data_url TEXT`;
+  await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS volunteer_certificate_template_version INTEGER`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_members_application_id ON members (application_id)`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_members_volunteer_number ON members (volunteer_number) WHERE volunteer_number IS NOT NULL`;
   await sql`
     UPDATE members
     SET application_id = COALESCE(application_id, CONCAT('APP/', membership_number::text))
@@ -77,15 +84,30 @@ function normalizeEditorState(value) {
   };
 
   return {
-    nameX: asNumber("nameX", 1167),
-    nameY: asNumber("nameY", 799),
-    nameFontSize: asNumber("nameFontSize", 53),
-    detailX: asNumber("detailX", 1167),
-    detailY: asNumber("detailY", 849),
-    detailFontSize: asNumber("detailFontSize", 50),
-    photoX: asNumber("photoX", 333),
-    photoY: asNumber("photoY", 999),
-    photoRadius: asNumber("photoRadius", 175),
+    certificateOfX: asNumber("certificateOfX", 494),
+    certificateOfY: asNumber("certificateOfY", 248),
+    certificateOfFontSize: asNumber("certificateOfFontSize", 34),
+    certificateTypeX: asNumber("certificateTypeX", 494),
+    certificateTypeY: asNumber("certificateTypeY", 292),
+    certificateTypeFontSize: asNumber("certificateTypeFontSize", 38),
+    nameX: asNumber("nameX", 1198),
+    nameY: asNumber("nameY", 770),
+    nameFontSize: asNumber("nameFontSize", 52),
+    designationX: asNumber("designationX", 1198),
+    designationY: asNumber("designationY", 812),
+    designationFontSize: asNumber("designationFontSize", 38),
+    detailX: asNumber("detailX", 1198),
+    detailY: asNumber("detailY", 862),
+    detailFontSize: asNumber("detailFontSize", 42),
+    membershipX: asNumber("membershipX", 1178),
+    membershipY: asNumber("membershipY", 1248),
+    membershipFontSize: asNumber("membershipFontSize", 44),
+    dateX: asNumber("dateX", 685),
+    dateY: asNumber("dateY", 1362),
+    dateFontSize: asNumber("dateFontSize", 30),
+    photoX: asNumber("photoX", 304),
+    photoY: asNumber("photoY", 1002),
+    photoRadius: asNumber("photoRadius", 173),
   };
 }
 
@@ -115,6 +137,11 @@ function normalizeMember(row) {
     certificate_editor_state: row.certificate_editor_state ? normalizeEditorState(row.certificate_editor_state) : undefined,
     certificate_template_version: row.certificate_template_version ? Number(row.certificate_template_version) : undefined,
     certificate_submitted_at: row.certificate_submitted_at || undefined,
+    volunteer_status: row.volunteer_status || "not_applied",
+    volunteer_number: row.volunteer_number ? Number(row.volunteer_number) : undefined,
+    volunteer_certificate_data_url: row.volunteer_certificate_data_url || undefined,
+    volunteer_certificate_template_version: row.volunteer_certificate_template_version ? Number(row.volunteer_certificate_template_version) : undefined,
+    volunteer_applied_at: row.volunteer_applied_at || undefined,
     created_at: row.created_at,
     approved_at: row.approved_at || undefined,
     issue_date: row.issue_date || undefined,
@@ -201,12 +228,33 @@ function validateRegistration(body) {
 }
 
 async function generateMembershipIdentity() {
-  const rows = await sql`SELECT nextval('membership_number_seq')::bigint AS membership_number`;
+  const rows = await sql`
+    SELECT candidate AS membership_number
+    FROM generate_series(1, GREATEST((SELECT COALESCE(MAX(membership_number), 0) + 1 FROM members), 1)) AS candidate
+    WHERE NOT EXISTS (
+      SELECT 1 FROM members WHERE membership_number = candidate
+    )
+    ORDER BY candidate ASC
+    LIMIT 1
+  `;
   const membershipNumber = Number(rows[0].membership_number);
   return {
     membershipNumber,
     membershipId: `LISA/${membershipNumber}`,
   };
+}
+
+async function generateVolunteerNumber() {
+  const rows = await sql`
+    SELECT candidate AS volunteer_number
+    FROM generate_series(1, GREATEST((SELECT COALESCE(MAX(volunteer_number), 0) + 1 FROM members), 1)) AS candidate
+    WHERE NOT EXISTS (
+      SELECT 1 FROM members WHERE volunteer_number = candidate
+    )
+    ORDER BY candidate
+    LIMIT 1
+  `;
+  return Number(rows[0].volunteer_number);
 }
 
 function generateApplicationId(membershipNumber) {
@@ -335,6 +383,7 @@ app.post("/api/members/register", async (req, res) => {
         photo_data_url,
         certificate_draft_data_url,
         certificate_editor_state,
+        certificate_submitted_at,
         issue_date
       ) VALUES (
         ${membershipNumber},
@@ -357,6 +406,7 @@ app.post("/api/members/register", async (req, res) => {
         ${req.body.photo_data_url ? String(req.body.photo_data_url) : null},
         ${req.body.certificate_draft_data_url ? String(req.body.certificate_draft_data_url) : null},
         ${req.body.certificate_editor_state ? JSON.stringify(normalizeEditorState(req.body.certificate_editor_state)) : null}::jsonb,
+        ${req.body.certificate_draft_data_url ? new Date().toISOString() : null},
         ${new Date().toISOString()}
       )
       RETURNING *
@@ -469,6 +519,55 @@ app.put("/api/members/me/certificate", requireAuth, async (req, res) => {
   }
 });
 
+app.put("/api/members/me/volunteer-certificate", requireAuth, async (req, res) => {
+  try {
+    if (!req.user?.memberId) {
+      return res.status(403).json({ error: "Member access required." });
+    }
+
+    const currentRows = await sql`
+      SELECT volunteer_status FROM members
+      WHERE id = ${req.user.memberId}
+      LIMIT 1
+    `;
+
+    if (currentRows.length === 0) {
+      return res.status(404).json({ error: "Member not found." });
+    }
+
+    if (currentRows[0].volunteer_status !== "approved") {
+      return res.status(403).json({ error: "Volunteer certificate is available after admin approval." });
+    }
+
+    const certificateDataUrl = String(req.body.volunteer_certificate_data_url || "").trim();
+    const templateVersion = Number(req.body.volunteer_certificate_template_version);
+
+    if (!certificateDataUrl.startsWith("data:image/png;base64,") && !certificateDataUrl.startsWith("data:image/jpeg;base64,")) {
+      return res.status(400).json({ error: "A PNG or JPEG volunteer certificate image is required." });
+    }
+
+    if (!Number.isInteger(templateVersion) || templateVersion < 1) {
+      return res.status(400).json({ error: "A valid volunteer certificate template version is required." });
+    }
+
+    const rows = await sql`
+      UPDATE members
+      SET
+        volunteer_certificate_data_url = ${certificateDataUrl},
+        volunteer_certificate_template_version = ${templateVersion}
+      WHERE id = ${req.user.memberId}
+      RETURNING volunteer_certificate_template_version
+    `;
+
+    res.json({
+      saved: true,
+      volunteer_certificate_template_version: Number(rows[0].volunteer_certificate_template_version || templateVersion),
+    });
+  } catch {
+    res.status(500).json({ error: "Failed to save volunteer certificate." });
+  }
+});
+
 app.put("/api/members/me/certificate-draft", requireAuth, async (req, res) => {
   try {
     if (req.user?.role !== "member") {
@@ -504,6 +603,30 @@ app.put("/api/members/me/certificate-draft", requireAuth, async (req, res) => {
     });
   } catch {
     res.status(500).json({ error: "Failed to save certificate draft." });
+  }
+});
+
+app.post("/api/members/me/volunteer", requireAuth, async (req, res) => {
+  try {
+    if (!req.user?.memberId) {
+      return res.status(403).json({ error: "Member access required." });
+    }
+
+    const rows = await sql`
+      UPDATE members
+      SET volunteer_status = 'pending',
+          volunteer_applied_at = COALESCE(volunteer_applied_at, NOW())
+      WHERE id = ${req.user.memberId}
+      RETURNING *
+    `;
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Member not found." });
+    }
+
+    res.json({ member: publicMember(rows[0]) });
+  } catch {
+    res.status(500).json({ error: "Failed to submit volunteer application." });
   }
 });
 
@@ -806,6 +929,71 @@ app.patch("/api/admin/members/:id/status", requireAdmin, async (req, res) => {
     res.json({ member: publicMember(rows[0]) });
   } catch {
     res.status(500).json({ error: "Failed to update member status." });
+  }
+});
+
+app.patch("/api/admin/members/:id/volunteer-status", requireAdmin, async (req, res) => {
+  try {
+    const status = String(req.body.status || "").trim();
+    if (!VOLUNTEER_STATUSES.has(status)) {
+      return res.status(400).json({ error: "Invalid volunteer status." });
+    }
+
+    let volunteerNumber = null;
+    if (status === "approved") {
+      const existing = await sql`
+        SELECT volunteer_number FROM members
+        WHERE id = ${req.params.id}
+        LIMIT 1
+      `;
+      if (existing.length === 0) {
+        return res.status(404).json({ error: "Member not found." });
+      }
+      volunteerNumber = existing[0].volunteer_number || await generateVolunteerNumber();
+    }
+
+    const rows = status === "approved"
+      ? await sql`
+          UPDATE members
+          SET volunteer_status = ${status},
+              volunteer_number = ${volunteerNumber}
+          WHERE id = ${req.params.id}
+          RETURNING *
+        `
+      : await sql`
+          UPDATE members
+          SET volunteer_status = ${status}
+          WHERE id = ${req.params.id}
+          RETURNING *
+        `;
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Member not found." });
+    }
+
+    res.json({ member: publicMember(rows[0]) });
+  } catch {
+    res.status(500).json({ error: "Failed to update volunteer status." });
+  }
+});
+
+app.patch("/api/admin/members/:id/certificate-editor", requireAdmin, async (req, res) => {
+  try {
+    const editorState = normalizeEditorState(req.body.certificate_editor_state);
+    const rows = await sql`
+      UPDATE members
+      SET certificate_editor_state = ${JSON.stringify(editorState)}::jsonb
+      WHERE id = ${req.params.id}
+      RETURNING *
+    `;
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Member not found." });
+    }
+
+    res.json({ member: publicMember(rows[0]) });
+  } catch {
+    res.status(500).json({ error: "Failed to save certificate editor settings." });
   }
 });
 

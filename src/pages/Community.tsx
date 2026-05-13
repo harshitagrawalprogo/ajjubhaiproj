@@ -1,5 +1,6 @@
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import PageLayout from "@/components/PageLayout";
 import PageHeader from "@/components/PageHeader";
 import {
@@ -81,7 +82,7 @@ function FadeIn({
 }
 
 export default function Community() {
-  const [activeForm, setActiveForm] = useState<"member" | "volunteer" | null>(
+  const [activeForm, setActiveForm] = useState<"member" | null>(
     null,
   );
 
@@ -186,23 +187,17 @@ export default function Community() {
                 >
                   Become a Member
                 </button>
-                <button
-                  onClick={() => setActiveForm("volunteer")}
+                <Link
+                  to="/volunteer"
                   className="px-8 py-4 rounded-xl font-semibold transition-all hover:-translate-y-0.5 border"
                   style={{
-                    background:
-                      activeForm === "volunteer"
-                        ? "linear-gradient(135deg, #f0d080, #c9a84c)"
-                        : "rgba(255,255,255,0.05)",
-                    color: activeForm === "volunteer" ? "#0d1b3e" : "white",
-                    borderColor:
-                      activeForm === "volunteer"
-                        ? "transparent"
-                        : "rgba(255,255,255,0.1)",
+                    background: "rgba(255,255,255,0.05)",
+                    color: "white",
+                    borderColor: "rgba(255,255,255,0.1)",
                   }}
                 >
                   Become a Volunteer
-                </button>
+                </Link>
               </div>
             </div>
           </FadeIn>
@@ -216,12 +211,7 @@ export default function Community() {
                 exit={{ opacity: 0, height: 0, y: -20 }}
                 className="mt-8 rounded-3xl overflow-hidden shadow-2xl"
               >
-                <MembershipContent
-                  initialTier={
-                    activeForm === "volunteer" ? "volunteer" : "life"
-                  }
-                  autoScroll={true}
-                />
+                <MembershipContent initialTier="life" autoScroll={true} />
               </motion.div>
             )}
           </AnimatePresence>

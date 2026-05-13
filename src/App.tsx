@@ -7,6 +7,9 @@ import { useEffect } from "react";
 import Index from "./pages/Index.tsx";
 import About from "./pages/About.tsx";
 import ResearchSupport from "./pages/ResearchSupport.tsx";
+import Programs from "./pages/Programs.tsx";
+import ProgramDetail from "./pages/ProgramDetail.tsx";
+import LibraryAutomation from "./pages/LibraryAutomation.tsx";
 import Events from "./pages/Events.tsx";
 import KnowledgeHub from "./pages/KnowledgeHub.tsx";
 import Community from "./pages/Community.tsx";
@@ -17,6 +20,7 @@ import Membership from "./pages/Membership.tsx";
 import Donate from "./pages/Donate.tsx";
 import Blog from "./pages/Blog.tsx";
 import LISATube from "./pages/LISATube.tsx";
+import Volunteer from "./pages/Volunteer.tsx";
 import AdminLogin from "./pages/admin/AdminLogin.tsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import AdminMemberDetail from "./pages/admin/AdminMemberDetail.tsx";
@@ -44,11 +48,15 @@ const App = () => (
           <Route path="/about" element={<About />} />
           <Route path="/governance" element={<Governance />} />
           <Route path="/research-support" element={<ResearchSupport />} />
+          <Route path="/programs" element={<Programs />} />
+          <Route path="/programs/:slug" element={<ProgramDetail />} />
+          <Route path="/library-automation" element={<LibraryAutomation />} />
           <Route path="/events" element={<Events />} />
           <Route path="/knowledge" element={<KnowledgeHub />} />
           <Route path="/community" element={<Community />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/membership" element={<Membership />} />
+          <Route path="/volunteer" element={<Volunteer />} />
           <Route path="/donate" element={<Donate />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/lisatube" element={<LISATube />} />

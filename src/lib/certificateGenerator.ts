@@ -1,31 +1,63 @@
-﻿import type { Member } from './supabase';
+import type { Member } from './supabase';
 import type { LifeCertificateEditorState } from './membershipTypes';
 import { TIER_COLORS } from './membershipDb';
 import { fetchDocumentTemplates, type DocumentTemplate } from './documentTemplates';
 import { buildApiUrl } from './api';
 
-export const LIFE_CERTIFICATE_TEMPLATE_VERSION = 4;
-const LIFE_CERTIFICATE_DRAFT_TEMPLATE_URL = '/membership/rawwithoutsign.png';
-const LIFE_CERTIFICATE_TEMPLATE_URL = '/membership/life-membership-certificate-final.png';
+export const LIFE_CERTIFICATE_TEMPLATE_VERSION = 9;
+export const VOLUNTEER_CERTIFICATE_TEMPLATE_VERSION = LIFE_CERTIFICATE_TEMPLATE_VERSION;
+const LIFE_CERTIFICATE_DRAFT_TEMPLATE_URL = '/membership/No_sign-01.png';
+const LIFE_CERTIFICATE_TEMPLATE_URL = '/membership/withsign-01.png';
+
+const CANVA_CERTIFICATE_WIDTH = 1876;
+const CANVA_CERTIFICATE_HEIGHT = 1438;
+const CANVA_CERTIFICATE_COORDS = {
+  name: { x: 1237, y: 852, maxWidth: 760, startSize: 56, minSize: 36 },
+  membership: { x: 1195, y: 1260, maxWidth: 360, startSize: 38, minSize: 28 },
+  date: { x: 762, y: 1348, maxWidth: 355, startSize: 32, minSize: 24 },
+  photo: { x: 292.5, y: 995, radius: 177.5 },
+};
 
 export const DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE: LifeCertificateEditorState = {
-  nameX: 1167,
-  nameY: 799,
-  nameFontSize: 53,
-  detailX: 1167,
-  detailY: 849,
-  detailFontSize: 50,
-  photoX: 333,
-  photoY: 999,
-  photoRadius: 175,
+  certificateOfX: 494,
+  certificateOfY: 248,
+  certificateOfFontSize: 34,
+  certificateTypeX: 494,
+  certificateTypeY: 292,
+  certificateTypeFontSize: 38,
+  nameX: 1198,
+  nameY: 770,
+  nameFontSize: 52,
+  designationX: 1198,
+  designationY: 812,
+  designationFontSize: 38,
+  detailX: 1198,
+  detailY: 862,
+  detailFontSize: 42,
+  membershipX: 1178,
+  membershipY: 1248,
+  membershipFontSize: 44,
+  dateX: 685,
+  dateY: 1362,
+  dateFontSize: 30,
+  photoX: 304,
+  photoY: 1002,
+  photoRadius: 173,
 };
 
 let _cachedTemplateImage: HTMLImageElement | null = null;
 const _templateImageCache = new Map<string, HTMLImageElement>();
+export interface LifeCertificateSettings {
+  draftTemplateUrl: string;
+  finalTemplateUrl: string;
+  editorState: LifeCertificateEditorState;
+}
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+let _lifeCertificateSettingsCache: LifeCertificateSettings | null = null;
+
+// ─────────────────────────────────────────────────────────────
 //  Helpers
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -94,20 +126,74 @@ async function getTemplate(key: string): Promise<DocumentTemplate | undefined> {
   return templates.find((template) => template.key === key && template.template_url);
 }
 
+export async function getLifeCertificateSettings(): Promise<LifeCertificateSettings> {
+  try {
+    const templates = await fetchDocumentTemplates();
+    const certificate = templates.find((template) => template.key === 'certificate');
+    const settings = certificate?.field_map?.lifeCertificate
+      && typeof certificate.field_map.lifeCertificate === 'object'
+      ? certificate.field_map.lifeCertificate as Record<string, unknown>
+      : {};
+
+    _lifeCertificateSettingsCache = {
+      draftTemplateUrl: getString(settings.draftTemplateUrl, LIFE_CERTIFICATE_DRAFT_TEMPLATE_URL),
+      finalTemplateUrl: getString(settings.finalTemplateUrl, certificate?.template_url || LIFE_CERTIFICATE_TEMPLATE_URL),
+      editorState: normalizeLifeCertificateEditorState(settings.editorState as Partial<LifeCertificateEditorState> | undefined),
+    };
+  } catch {
+    _lifeCertificateSettingsCache = {
+      draftTemplateUrl: LIFE_CERTIFICATE_DRAFT_TEMPLATE_URL,
+      finalTemplateUrl: LIFE_CERTIFICATE_TEMPLATE_URL,
+      editorState: normalizeLifeCertificateEditorState(),
+    };
+  }
+
+  return _lifeCertificateSettingsCache;
+}
+
 function getMembershipNumberText(member: Member) {
   return String(member.membership_number || member.membership_id.replace('LISA/', '')).trim();
+}
+
+function getCertificateNumberText(member: Member, certificateKind: 'membership' | 'volunteer') {
+  if (certificateKind === 'volunteer') {
+    return String(member.volunteer_number || '').trim();
+  }
+  return getMembershipNumberText(member);
+}
+
+function getCertificateTypeText(member: Member, certificateKind: 'membership' | 'volunteer' = 'membership') {
+  if (certificateKind === 'volunteer') return 'VOLUNTEER';
+  return member.membership_tier === 'life'
+    ? 'LIFE MEMBERSHIP'
+    : `${member.membership_tier.toUpperCase()} MEMBERSHIP`;
 }
 
 export function normalizeLifeCertificateEditorState(
   state?: Partial<LifeCertificateEditorState> | null,
 ): LifeCertificateEditorState {
   return {
+    certificateOfX: typeof state?.certificateOfX === 'number' ? state.certificateOfX : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.certificateOfX,
+    certificateOfY: typeof state?.certificateOfY === 'number' ? state.certificateOfY : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.certificateOfY,
+    certificateOfFontSize: typeof state?.certificateOfFontSize === 'number' ? state.certificateOfFontSize : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.certificateOfFontSize,
+    certificateTypeX: typeof state?.certificateTypeX === 'number' ? state.certificateTypeX : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.certificateTypeX,
+    certificateTypeY: typeof state?.certificateTypeY === 'number' ? state.certificateTypeY : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.certificateTypeY,
+    certificateTypeFontSize: typeof state?.certificateTypeFontSize === 'number' ? state.certificateTypeFontSize : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.certificateTypeFontSize,
     nameX: typeof state?.nameX === 'number' ? state.nameX : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.nameX,
     nameY: typeof state?.nameY === 'number' ? state.nameY : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.nameY,
     nameFontSize: typeof state?.nameFontSize === 'number' ? state.nameFontSize : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.nameFontSize,
+    designationX: typeof state?.designationX === 'number' ? state.designationX : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.designationX,
+    designationY: typeof state?.designationY === 'number' ? state.designationY : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.designationY,
+    designationFontSize: typeof state?.designationFontSize === 'number' ? state.designationFontSize : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.designationFontSize,
     detailX: typeof state?.detailX === 'number' ? state.detailX : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.detailX,
     detailY: typeof state?.detailY === 'number' ? state.detailY : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.detailY,
     detailFontSize: typeof state?.detailFontSize === 'number' ? state.detailFontSize : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.detailFontSize,
+    membershipX: typeof state?.membershipX === 'number' ? state.membershipX : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.membershipX,
+    membershipY: typeof state?.membershipY === 'number' ? state.membershipY : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.membershipY,
+    membershipFontSize: typeof state?.membershipFontSize === 'number' ? state.membershipFontSize : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.membershipFontSize,
+    dateX: typeof state?.dateX === 'number' ? state.dateX : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.dateX,
+    dateY: typeof state?.dateY === 'number' ? state.dateY : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.dateY,
+    dateFontSize: typeof state?.dateFontSize === 'number' ? state.dateFontSize : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.dateFontSize,
     photoX: typeof state?.photoX === 'number' ? state.photoX : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.photoX,
     photoY: typeof state?.photoY === 'number' ? state.photoY : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.photoY,
     photoRadius: typeof state?.photoRadius === 'number' ? state.photoRadius : DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE.photoRadius,
@@ -223,40 +309,40 @@ async function generateLifeMembershipCertificate(member: Member): Promise<string
     _cachedTemplateImage = await loadImage(LIFE_CERTIFICATE_TEMPLATE_URL);
   }
   const background = _cachedTemplateImage;
-  // Canvas is exactly 2000 Ã— 1414 px
+  // Canvas is exactly 2000 × 1414 px
   const W = background.width;   // 2000
   const H = background.height;  // 1414
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d')!;
   ctx.drawImage(background, 0, 0, W, H);
 
-  // â”€â”€ Positions scaled from the reference HTML (canvas 1200Ã—850 â†’ 2000Ã—1414)
+  // ── Positions scaled from the reference HTML (canvas 1200×850 → 2000×1414)
   // Scale X = 2000/1200 = 1.6667  |  Scale Y = 1414/850 = 1.6635
   //
-  // REF POS (1200Ã—850)           SCALED (2000Ã—1414)
-  //  name        700, 480    â†’    1167, 799
-  //  detail      700, 510    â†’    1167, 849
-  //  membershipNo 915, 605   â†’    1525, 1007
-  //  issuedOnVal  750, 700   â†’    1250, 1165
-  //  photo        x=95,y=495,r=105 â†’ cx=333,cy=999,r=175
+  // REF POS (1200×850)           SCALED (2000×1414)
+  //  name        700, 480    →    1167, 799
+  //  detail      700, 510    →    1167, 849
+  //  membershipNo 915, 605   →    1525, 1007
+  //  issuedOnVal  750, 700   →    1250, 1165
+  //  photo        x=95,y=495,r=105 → cx=333,cy=999,r=175
 
   ctx.textAlign = 'center';
 
-  // â”€â”€ Member name â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // ref: font 'bold 32px Georgia, serif' scaled â†’ 53px
+  // ── Member name ──────────────────────────────────────────────────────
+  // ref: font 'bold 32px Georgia, serif' scaled → 53px
   const rawName = member.name.trim().toUpperCase();
-  const name = rawName.length > 32 ? rawName.slice(0, 31) + 'â€¦' : rawName;
+  const name = rawName.length > 32 ? rawName.slice(0, 31) + '…' : rawName;
   ctx.fillStyle = '#1e2a8a';
   const nameSize = fitFont(ctx, name, 'Georgia, serif', 'bold', 880, 53, 32);
   ctx.font = `bold ${nameSize}px Georgia, serif`;
   ctx.fillText(name, 1167, 799);
 
-  // â”€â”€ Designation / institution â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // ref: font '30px Georgia, serif' scaled â†’ 50px
+  // ── Designation / institution ─────────────────────────────────────────
+  // ref: font '30px Georgia, serif' scaled → 50px
   // Build detail: prefer custom_detail, fallback to designation + institution
   const rawDetail = member.custom_detail?.trim() ||
     [member.designation, member.institution].filter(Boolean).join(', ');
-  const detail = rawDetail.length > 60 ? rawDetail.slice(0, 59) + 'â€¦' : rawDetail;
+  const detail = rawDetail.length > 60 ? rawDetail.slice(0, 59) + '…' : rawDetail;
 
   if (detail) {
     drawCenteredTextBlock(ctx, detail, {
@@ -273,9 +359,9 @@ async function generateLifeMembershipCertificate(member: Member): Promise<string
     });
   }
 
-  // â”€â”€ Membership number â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Template already prints "Membership No. LISA/" â€” draw ONLY the digits.
-  // ref: font 'bold 38px Georgia, serif' @ x=915 (center) scaled â†’ 63px @ x=1525
+  // ── Membership number ─────────────────────────────────────────────────
+  // Template already prints "Membership No. LISA/" — draw ONLY the digits.
+  // ref: font 'bold 38px Georgia, serif' @ x=915 (center) scaled → 63px @ x=1525
   // We use textAlign='center' and position at 1525 so the number centres after "LISA/"
   const membershipNumber = getMembershipNumberText(member);
   ctx.fillStyle = '#1e2a8a';
@@ -284,16 +370,16 @@ async function generateLifeMembershipCertificate(member: Member): Promise<string
   ctx.textAlign = 'center';
   ctx.fillText(membershipNumber, 1525, 1007);
 
-  // â”€â”€ Issue date â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // ref: font 'italic 24px Georgia, serif' @ (750,700) scaled â†’ 40px @ (1250,1165)
+  // ── Issue date ────────────────────────────────────────────────────────
+  // ref: font 'italic 24px Georgia, serif' @ (750,700) scaled → 40px @ (1250,1165)
   const issueDate = formatIssueDate(member);
   ctx.fillStyle = '#111111';
   ctx.font = 'italic bold 40px Georgia, serif';
   ctx.textAlign = 'center';
   ctx.fillText(issueDate, 1250, 1165);
 
-  // â”€â”€ Member photo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // ref: photo x=95, y=495, r=105  â†’  cx=333, cy=999, r=175
+  // ── Member photo ──────────────────────────────────────────────────────
+  // ref: photo x=95, y=495, r=105  →  cx=333, cy=999, r=175
   const memberPhoto = member.photo_data_url || member.photo_url;
   if (memberPhoto) {
     try {
@@ -313,7 +399,7 @@ async function generateLifeMembershipCertificate(member: Member): Promise<string
     } catch { /* skip if photo fails to load */ }
   }
 
-  // Output JPEG at 87% quality â€” ~10x smaller than PNG, visually identical for certificates.
+  // Output JPEG at 87% quality — ~10x smaller than PNG, visually identical for certificates.
   return canvas.toDataURL('image/jpeg', 0.87);
 }
 
@@ -328,61 +414,137 @@ async function getTemplateImage(src: string): Promise<HTMLImageElement> {
 async function generateConfiguredLifeCertificate(
   member: Member,
   templateUrl: string,
-  editorState?: Partial<LifeCertificateEditorState> | null,
   includeMembershipNumber = true,
+  editorState?: Partial<LifeCertificateEditorState> | null,
+  certificateKind: 'membership' | 'volunteer' = 'membership',
 ): Promise<string> {
-  const state = normalizeLifeCertificateEditorState(editorState || member.certificate_editor_state);
-  const background = await getTemplateImage(templateUrl);
+  const background = await getTemplateImage(drawableImageUrl(templateUrl));
   const canvas = createCanvas(background.width, background.height);
   const ctx = canvas.getContext('2d')!;
   ctx.drawImage(background, 0, 0, background.width, background.height);
   ctx.textAlign = 'center';
+  const settings = await getLifeCertificateSettings();
+  const state = normalizeLifeCertificateEditorState(editorState || settings.editorState);
+  const scaleX = background.width / CANVA_CERTIFICATE_WIDTH;
+  const scaleY = background.height / CANVA_CERTIFICATE_HEIGHT;
+  const scale = Math.min(scaleX, scaleY);
+
+  ctx.fillStyle = '#ffffff';
+  const certificateOfSize = fitFont(
+    ctx,
+    'OF',
+    'Georgia, serif',
+    'bold',
+    220 * scaleX,
+    state.certificateOfFontSize * scale,
+    20 * scale,
+  );
+  ctx.font = `bold ${certificateOfSize}px Georgia, serif`;
+  ctx.fillText('OF', state.certificateOfX * scaleX, state.certificateOfY * scaleY);
+
+  const certificateType = getCertificateTypeText(member, certificateKind);
+  ctx.fillStyle = '#ffffff';
+  const certificateTypeSize = fitFont(
+    ctx,
+    certificateType,
+    'Georgia, serif',
+    'bold',
+    760 * scaleX,
+    state.certificateTypeFontSize * scale,
+    24 * scale,
+  );
+  ctx.font = `bold ${certificateTypeSize}px Georgia, serif`;
+  ctx.fillText(certificateType, state.certificateTypeX * scaleX, state.certificateTypeY * scaleY);
 
   const rawName = member.name.trim().toUpperCase();
-  const name = rawName.length > 32 ? `${rawName.slice(0, 31)}...` : rawName;
+  const name = rawName.length > 42 ? `${rawName.slice(0, 41)}...` : rawName;
   ctx.fillStyle = '#1e2a8a';
-  const nameSize = fitFont(ctx, name, 'Georgia, serif', 'bold', 880, state.nameFontSize, 32);
+  const nameSize = fitFont(
+    ctx,
+    name,
+    'Georgia, serif',
+    'bold',
+    880 * scaleX,
+    state.nameFontSize * scale,
+    32 * scale,
+  );
   ctx.font = `bold ${nameSize}px Georgia, serif`;
-  ctx.fillText(name, state.nameX, state.nameY);
+  ctx.fillText(name, state.nameX * scaleX, state.nameY * scaleY);
 
-  const rawDetail = member.custom_detail?.trim() || [member.designation, member.institution].filter(Boolean).join(', ');
-  const detail = rawDetail.length > 60 ? `${rawDetail.slice(0, 59)}...` : rawDetail;
-  if (detail) {
-    drawCenteredTextBlock(ctx, detail, {
-      x: state.detailX,
-      y: state.detailY,
-      maxWidth: 890,
-      lineHeight: 52,
+  const designation = member.designation?.trim();
+  if (designation) {
+    const designationSize = fitFont(
+      ctx,
+      designation,
+      'Georgia, serif',
+      '600',
+      820 * scaleX,
+      state.designationFontSize * scale,
+      24 * scale,
+    );
+    ctx.fillStyle = '#2d2d2d';
+    ctx.font = `600 ${designationSize}px Georgia, serif`;
+    ctx.fillText(designation, state.designationX * scaleX, state.designationY * scaleY);
+  }
+
+  const rawDetail = member.custom_detail?.trim()
+    || [member.institution, member.city].filter(Boolean).join(', ');
+  if (rawDetail) {
+    drawCenteredTextBlock(ctx, rawDetail, {
+      x: state.detailX * scaleX,
+      y: state.detailY * scaleY,
+      maxWidth: 890 * scaleX,
+      lineHeight: state.detailFontSize * 1.05 * scale,
       maxLines: 2,
       fontFamily: 'Georgia, serif',
       fontWeight: '600',
-      startSize: state.detailFontSize,
-      minSize: 28,
+      startSize: state.detailFontSize * scale,
+      minSize: 26 * scale,
       color: '#2d2d2d',
     });
   }
 
   if (includeMembershipNumber) {
-    const membershipNumber = getMembershipNumberText(member);
+    const membershipNumber = getCertificateNumberText(member, certificateKind);
     ctx.fillStyle = '#1e2a8a';
-    const membershipSize = fitFont(ctx, membershipNumber, 'Georgia, serif', 'bold', 300, 63, 38);
+    const membershipSize = fitFont(
+      ctx,
+      membershipNumber,
+      'Georgia, serif',
+      'bold',
+      300 * scaleX,
+      state.membershipFontSize * scale,
+      32 * scale,
+    );
     ctx.font = `bold ${membershipSize}px Georgia, serif`;
-    ctx.fillText(membershipNumber, 1525, 1007);
-  }
+    ctx.fillText(membershipNumber, state.membershipX * scaleX, state.membershipY * scaleY);
 
-  ctx.fillStyle = '#111111';
-  ctx.font = 'italic bold 40px Georgia, serif';
-  ctx.fillText(formatIssueDate(member), 1250, 1165);
+    ctx.fillStyle = '#111111';
+    const issueDate = formatIssueDate(member);
+    const dateSize = fitFont(
+      ctx,
+      issueDate,
+      'Georgia, serif',
+      'bold italic',
+      355 * scaleX,
+      state.dateFontSize * scale,
+      24 * scale,
+    );
+    ctx.font = `bold italic ${dateSize}px Georgia, serif`;
+    ctx.fillText(issueDate, state.dateX * scaleX, state.dateY * scaleY);
+  }
 
   const memberPhoto = member.photo_data_url || member.photo_url;
   if (memberPhoto) {
     try {
       const image = await loadImage(drawableImageUrl(memberPhoto));
       const size = Math.min(image.width, image.height);
-      const radius = state.photoRadius;
+      const radius = state.photoRadius * scale;
+      const photoX = state.photoX * scaleX;
+      const photoY = state.photoY * scaleY;
       ctx.save();
       ctx.beginPath();
-      ctx.arc(state.photoX, state.photoY, radius, 0, Math.PI * 2);
+      ctx.arc(photoX, photoY, radius, 0, Math.PI * 2);
       ctx.clip();
       ctx.drawImage(
         image,
@@ -390,8 +552,8 @@ async function generateConfiguredLifeCertificate(
         (image.height - size) / 2,
         size,
         size,
-        state.photoX - radius,
-        state.photoY - radius,
+        photoX - radius,
+        photoY - radius,
         radius * 2,
         radius * 2,
       );
@@ -406,13 +568,28 @@ async function generateConfiguredLifeCertificate(
 
 export async function generateLifeCertificateDraft(
   member: Member,
-  editorState?: Partial<LifeCertificateEditorState> | null,
+  options?: { editorState?: Partial<LifeCertificateEditorState> | null },
 ): Promise<string> {
+  const settings = await getLifeCertificateSettings();
   return generateConfiguredLifeCertificate(
     member,
-    LIFE_CERTIFICATE_DRAFT_TEMPLATE_URL,
-    editorState,
+    settings.draftTemplateUrl,
     false,
+    options?.editorState,
+  );
+}
+
+export async function generateVolunteerCertificate(
+  member: Member,
+  options?: { editorState?: Partial<LifeCertificateEditorState> | null },
+): Promise<string> {
+  const settings = await getLifeCertificateSettings();
+  return generateConfiguredLifeCertificate(
+    member,
+    settings.finalTemplateUrl,
+    true,
+    options?.editorState,
+    'volunteer',
   );
 }
 
@@ -515,271 +692,22 @@ async function generateIdSideFromTemplate(member: Member, template: DocumentTemp
   return canvas.toDataURL('image/png');
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  MEMBERSHIP CERTIFICATE  (1122 Ã— 794 px â€“ A4 landscape @96dpi)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
+//  MEMBERSHIP CERTIFICATE  (1122 × 794 px – A4 landscape @96dpi)
+// ─────────────────────────────────────────────────────────────
 export async function generateCertificate(
   member: Member,
   options?: { editorState?: Partial<LifeCertificateEditorState> | null },
 ): Promise<string> {
-  if (member.membership_tier === 'life') {
-    return generateConfiguredLifeCertificate(
-      member,
-      LIFE_CERTIFICATE_TEMPLATE_URL,
-      options?.editorState,
-      true,
-    );
-  }
-
-  const template = await getTemplate('certificate');
-  if (template) {
-    try {
-      return await generateCertificateFromTemplate(member, template);
-    } catch {
-      // Fall back to the built-in certificate when the external template cannot be drawn.
-    }
-  }
-
-  const W = 1122, H = 794;
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d')!;
-
-  const tierColor = TIER_COLORS[member.membership_tier] || '#c9a84c';
-  const navy = '#0d1b3e';
-  const gold = '#c9a84c';
-
-  // â”€â”€ Background â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Cream-white base
-  ctx.fillStyle = '#fdfaf5';
-  ctx.fillRect(0, 0, W, H);
-
-  // Decorative side bands
-  const leftGrad = ctx.createLinearGradient(0, 0, 60, 0);
-  leftGrad.addColorStop(0, navy);
-  leftGrad.addColorStop(1, '#1a3060');
-  ctx.fillStyle = leftGrad;
-  ctx.fillRect(0, 0, 54, H);
-
-  const rightGrad = ctx.createLinearGradient(W - 54, 0, W, 0);
-  rightGrad.addColorStop(0, '#1a3060');
-  rightGrad.addColorStop(1, navy);
-  ctx.fillStyle = rightGrad;
-  ctx.fillRect(W - 54, 0, 54, H);
-
-  // Gold accent stripes inside bands
-  ctx.fillStyle = gold;
-  ctx.fillRect(50, 0, 4, H);
-  ctx.fillRect(W - 54, 0, 4, H);
-
-  // Top/bottom bars
-  ctx.fillStyle = navy;
-  ctx.fillRect(54, 0, W - 108, 55);
-  ctx.fillRect(54, H - 55, W - 108, 55);
-
-  // Gold line under top bar
-  ctx.fillStyle = gold;
-  ctx.fillRect(54, 55, W - 108, 3);
-  ctx.fillRect(54, H - 58, W - 108, 3);
-
-  // Subtle background watermark circle
-  const wGrad = ctx.createRadialGradient(W / 2, H / 2, 50, W / 2, H / 2, 340);
-  wGrad.addColorStop(0, 'rgba(201,168,76,0.06)');
-  wGrad.addColorStop(1, 'rgba(201,168,76,0)');
-  ctx.fillStyle = wGrad;
-  ctx.fillRect(0, 0, W, H);
-
-  // â”€â”€ Logo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  try {
-    const logo = await loadImage('/logo.png');
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(W / 2, 110, 46, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(logo, W / 2 - 46, 64, 92, 92);
-    ctx.restore();
-    // Ring around logo
-    ctx.strokeStyle = gold;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.arc(W / 2, 110, 47, 0, Math.PI * 2);
-    ctx.stroke();
-  } catch { /* logo failed to load */ }
-
-  // â”€â”€ Header text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  ctx.fillStyle = navy;
-  ctx.font = 'bold 13px "Inter", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.letterSpacing = '3px';
-  ctx.fillText('LIS ACADEMY', W / 2, 30);
-  ctx.font = '10px "Inter", sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.fillText('A PROFESSIONAL PUBLIC CHARITABLE TRUST', W / 2, 43);
-  ctx.letterSpacing = '0px';
-
-  // â”€â”€ "MEMBERSHIP CERTIFICATE" title â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  ctx.fillStyle = navy;
-  ctx.font = 'bold 11px "Inter", sans-serif';
-  ctx.letterSpacing = '4px';
-  ctx.fillText('CERTIFICATE OF MEMBERSHIP', W / 2, 178);
-  ctx.letterSpacing = '0px';
-
-  // Decorative divider
-  const divW = 260;
-  const divX = W / 2;
-  ctx.strokeStyle = gold;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(divX - divW / 2, 186);
-  ctx.lineTo(divX + divW / 2, 186);
-  ctx.stroke();
-  // Diamond
-  ctx.save();
-  ctx.translate(divX, 186);
-  ctx.rotate(Math.PI / 4);
-  ctx.fillStyle = gold;
-  ctx.fillRect(-4, -4, 8, 8);
-  ctx.restore();
-
-  // â”€â”€ Membership tier badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const tierLabel = member.membership_tier.charAt(0).toUpperCase() + member.membership_tier.slice(1) + ' Member';
-  ctx.fillStyle = tierColor;
-  const badgeW = 180;
-  roundRect(ctx, W / 2 - badgeW / 2, 196, badgeW, 26, 13);
-  ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 10px "Inter", sans-serif';
-  ctx.letterSpacing = '2px';
-  ctx.fillText(tierLabel.toUpperCase(), W / 2, 212);
-  ctx.letterSpacing = '0px';
-
-  // â”€â”€ Main text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  ctx.fillStyle = '#555';
-  ctx.font = '14px "Inter", sans-serif';
-  ctx.fillText('This is to certify that', W / 2, 258);
-
-  // Member name
-  ctx.fillStyle = navy;
-  ctx.font = 'bold 34px "Playfair Display", Georgia, serif';
-  ctx.fillText(member.name, W / 2, 305);
-
-  // Gold underline
-  const nameW = ctx.measureText(member.name).width;
-  const lineLeft = W / 2 - Math.min(nameW / 2, 260);
-  const lineRight = W / 2 + Math.min(nameW / 2, 260);
-  ctx.strokeStyle = gold;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(lineLeft, 312);
-  ctx.lineTo(lineRight, 312);
-  ctx.stroke();
-
-  // Designation + institution
-  ctx.fillStyle = '#666';
-  ctx.font = '13px "Inter", sans-serif';
-  const pos = [member.designation, member.institution].filter(Boolean).join(' â€” ');
-  ctx.fillText(pos, W / 2, 334);
-
-  // Body text
-  ctx.fillStyle = '#555';
-  ctx.font = '13px "Inter", sans-serif';
-  const bodyY = 364;
-  wrapText(
-    ctx,
-    'has been duly enrolled as a member of the LIS Academy â€” a Professional Public Charitable Trust committed to advancing the Library & Information Science profession through education, technology, and research.',
-    W / 2, bodyY, 720, 20
+  const settings = await getLifeCertificateSettings();
+  return generateConfiguredLifeCertificate(
+    member,
+    settings.finalTemplateUrl,
+    true,
+    options?.editorState,
   );
-
-  // â”€â”€ Membership ID â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  ctx.fillStyle = '#f5f0e8';
-  roundRect(ctx, W / 2 - 140, 436, 280, 44, 8);
-  ctx.fill();
-  ctx.strokeStyle = gold;
-  ctx.lineWidth = 1;
-  roundRect(ctx, W / 2 - 140, 436, 280, 44, 8);
-  ctx.stroke();
-  ctx.fillStyle = '#888';
-  ctx.font = '10px "Inter", sans-serif';
-  ctx.letterSpacing = '2px';
-  ctx.fillText('MEMBERSHIP ID', W / 2, 452);
-  ctx.letterSpacing = '0px';
-  ctx.fillStyle = navy;
-  ctx.font = 'bold 16px "Inter", sans-serif';
-  ctx.letterSpacing = '3px';
-  ctx.fillText(member.membership_id, W / 2, 470);
-  ctx.letterSpacing = '0px';
-
-  // â”€â”€ Valid from â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const joinDate = new Date(member.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-  ctx.fillStyle = '#888';
-  ctx.font = '12px "Inter", sans-serif';
-  ctx.fillText(`Issued on: ${new Date(member.issue_date || member.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`, W / 2, 502);
-
-  // â”€â”€ Signature section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const sigY = 610;
-  // Left: Chairman
-  ctx.strokeStyle = navy;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(160, sigY);
-  ctx.lineTo(360, sigY);
-  ctx.stroke();
-  ctx.fillStyle = navy;
-  ctx.font = 'bold 12px "Inter", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Chairman', 260, sigY + 18);
-  ctx.fillStyle = '#888';
-  ctx.font = '11px "Inter", sans-serif';
-  ctx.fillText('LIS Academy', 260, sigY + 33);
-
-  // Right: Secretary
-  ctx.strokeStyle = navy;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(762, sigY);
-  ctx.lineTo(962, sigY);
-  ctx.stroke();
-  ctx.fillStyle = navy;
-  ctx.font = 'bold 12px "Inter", sans-serif';
-  ctx.fillText('Secretary', 862, sigY + 18);
-  ctx.fillStyle = '#888';
-  ctx.font = '11px "Inter", sans-serif';
-  ctx.fillText('LIS Academy', 862, sigY + 33);
-
-  // â”€â”€ Official seal placeholder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  ctx.strokeStyle = gold;
-  ctx.lineWidth = 2;
-  ctx.setLineDash([4, 4]);
-  ctx.beginPath();
-  ctx.arc(W / 2, sigY - 10, 42, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = 'rgba(201,168,76,0.08)';
-  ctx.beginPath();
-  ctx.arc(W / 2, sigY - 10, 42, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = gold;
-  ctx.font = 'bold 9px "Inter", sans-serif';
-  ctx.letterSpacing = '1px';
-  ctx.fillText('OFFICIAL', W / 2, sigY - 14);
-  ctx.fillText('SEAL', W / 2, sigY);
-  ctx.letterSpacing = '0px';
-
-  // â”€â”€ Footer bar text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  ctx.fillStyle = '#fff';
-  ctx.font = '10px "Inter", sans-serif';
-  ctx.letterSpacing = '1px';
-  ctx.fillText('lisacademyorg@gmail.com  |  +91 9449679737  |  www.lisacademy.org', W / 2, H - 20);
-  ctx.letterSpacing = '0px';
-
-  return canvas.toDataURL('image/png');
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  MEMBERSHIP ID CARD  (638 Ã— 402 px â€“ CR80 credit card)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function generateIdCard(member: Member): Promise<{ front: string; back: string }> {
   const [frontTemplate, backTemplate] = await Promise.all([getTemplate('id_front'), getTemplate('id_back')]);
   if (frontTemplate || backTemplate) {
@@ -797,7 +725,7 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   const W = 638, H = 402;
   const tierColor = TIER_COLORS[member.membership_tier] || '#c9a84c';
 
-  // â”€â”€ FRONT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── FRONT ───────────────────────────────────────────────────
   const front = document.createElement('canvas');
   front.width = W;
   front.height = H;
@@ -826,7 +754,7 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   fc.fillStyle = tierColor;
   fc.fillRect(0, H - 5, W, 5);
 
-  // â”€â”€ Logo (left side) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Logo (left side) ────────────────────────────────────────
   try {
     const logo = await loadImage('/logo.png');
     fc.save();
@@ -912,8 +840,8 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   infoY += 16;
   fc.fillStyle = 'rgba(255,255,255,0.8)';
   fc.font = '13px "Inter", sans-serif';
-  const designation = member.designation || 'â€”';
-  fc.fillText(designation.length > 28 ? designation.slice(0, 28) + 'â€¦' : designation, infoX, infoY);
+  const designation = member.designation || '—';
+  fc.fillText(designation.length > 28 ? designation.slice(0, 28) + '…' : designation, infoX, infoY);
   infoY += 22;
 
   fc.fillStyle = 'rgba(201,168,76,0.7)';
@@ -924,8 +852,8 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   infoY += 16;
   fc.fillStyle = 'rgba(255,255,255,0.8)';
   fc.font = '12px "Inter", sans-serif';
-  const inst = member.institution || 'â€”';
-  fc.fillText(inst.length > 34 ? inst.slice(0, 34) + 'â€¦' : inst, infoX, infoY);
+  const inst = member.institution || '—';
+  fc.fillText(inst.length > 34 ? inst.slice(0, 34) + '…' : inst, infoX, infoY);
 
   // Membership ID band
   fc.fillStyle = tierColor + '33';
@@ -967,7 +895,7 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   fc.textAlign = 'center';
   fc.fillText('lisacademyorg@gmail.com  |  +91 9449679737', W / 2, H - 14);
 
-  // â”€â”€ BACK â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── BACK ────────────────────────────────────────────────────
   const back = document.createElement('canvas');
   back.width = W;
   back.height = H;
@@ -1014,7 +942,7 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   const terms = [
     'This card is the property of LIS Academy and must be returned on demand.',
     'If found, please return to: 7/29, Vijayalakshmi Complex, 1st Main Road,',
-    'Gokul, Bengaluru â€“ 560054',
+    'Gokul, Bengaluru – 560054',
     '',
     'Contact: lisacademyorg@gmail.com | +91 9449679737',
   ];
@@ -1030,7 +958,7 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   bc.fillText('www.lisacademy.org', W / 2, H - 30);
   bc.fillStyle = 'rgba(255,255,255,0.3)';
   bc.font = '9px "Inter", sans-serif';
-  bc.fillText(member.membership_id + '  Â·  Valid from ' + new Date(member.created_at).getFullYear(), W / 2, H - 14);
+  bc.fillText(member.membership_id + '  ·  Valid from ' + new Date(member.created_at).getFullYear(), W / 2, H - 14);
 
   return {
     front: front.toDataURL('image/png'),
@@ -1038,9 +966,9 @@ export async function generateIdCard(member: Member): Promise<{ front: string; b
   };
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
 //  Print helper
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
 export function printImage(dataUrl: string, title = 'LIS Academy') {
   const win = window.open('', '_blank');
   if (!win) return;
@@ -1056,9 +984,9 @@ export function printImage(dataUrl: string, title = 'LIS Academy') {
   win.document.close();
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  Utility â€“ rounded rect (Canvas API helper)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
+//  Utility – rounded rect (Canvas API helper)
+// ─────────────────────────────────────────────────────────────
 function roundRect(
   ctx: CanvasRenderingContext2D,
   x: number, y: number, w: number, h: number, r: number
@@ -1075,6 +1003,7 @@ function roundRect(
   ctx.quadraticCurveTo(x, y, x + r, y);
   ctx.closePath();
 }
+
 
 
 

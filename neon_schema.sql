@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-CREATE SEQUENCE IF NOT EXISTS membership_number_seq START WITH 1601;
+CREATE SEQUENCE IF NOT EXISTS membership_number_seq START WITH 1;
 
 CREATE TABLE IF NOT EXISTS members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -19,13 +19,15 @@ CREATE TABLE IF NOT EXISTS members (
   city TEXT NOT NULL,
   state TEXT NOT NULL,
   pincode TEXT NOT NULL,
-  membership_tier TEXT NOT NULL CHECK (membership_tier IN ('student', 'professional', 'life', 'institutional')),
+  membership_tier TEXT NOT NULL CHECK (membership_tier IN ('student', 'life', 'institutional')),
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   photo_data_url TEXT,
   certificate_draft_data_url TEXT,
   certificate_editor_state JSONB,
   certificate_data_url TEXT,
   certificate_template_version INTEGER,
+  volunteer_status TEXT NOT NULL DEFAULT 'not_applied',
+  volunteer_applied_at TIMESTAMPTZ,
   issue_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   approved_at TIMESTAMPTZ,
@@ -38,6 +40,8 @@ ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_editor_state JSONB;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_data_url TEXT;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_template_version INTEGER;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS certificate_submitted_at TIMESTAMPTZ;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS volunteer_status TEXT DEFAULT 'not_applied';
+ALTER TABLE members ADD COLUMN IF NOT EXISTS volunteer_applied_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS idx_members_created_at ON members (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_members_membership_id ON members (membership_id);

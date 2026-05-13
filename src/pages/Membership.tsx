@@ -1,15 +1,13 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Award, CheckCircle, CreditCard, Download, Heart, ImagePlus, Lock, LogOut, Mail, Phone, Printer, Send, User, Building2, MapPin, SlidersHorizontal } from "lucide-react";
+import { Award, CheckCircle, CreditCard, Download, Heart, ImagePlus, Lock, LogOut, Mail, Phone, Printer, User, Building2, MapPin } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
 import { Link } from "react-router-dom";
 import {
-  DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE,
   LIFE_CERTIFICATE_TEMPLATE_VERSION,
   generateCertificate,
   generateIdCard,
   generateLifeCertificateDraft,
-  normalizeLifeCertificateEditorState,
   printImage,
 } from "@/lib/certificateGenerator";
 import {
@@ -19,12 +17,8 @@ import {
   logoutMember,
   registerMember,
   saveMemberCertificate,
-  saveMemberCertificateDraft,
 } from "@/lib/membershipDb";
-import type { LifeCertificateEditorState, Member, MembershipTier } from "@/lib/membershipTypes";
-
-const LIFE_CERTIFICATE_CANVAS_WIDTH = 2000;
-const LIFE_CERTIFICATE_CANVAS_HEIGHT = 1414;
+import type { Member, MembershipTier } from "@/lib/membershipTypes";
 
 const MEMBER_CATEGORIES = [
   "Librarian / Library Staff",
@@ -105,17 +99,16 @@ export function MembershipContent({ initialTier = "life", autoScroll = false }: 
   const [loadingMember, setLoadingMember] = useState(true);
   const [registering, setRegistering] = useState(false);
   const [logining, setLogining] = useState(false);
-  const [savingDraft, setSavingDraft] = useState(false);
   const [savingCertificate, setSavingCertificate] = useState(false);
   const [generatingDocs, setGeneratingDocs] = useState(false);
   const [error, setError] = useState("");
   const [loginIdentifier, setLoginIdentifier] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [registrationDraftPreviewUrl, setRegistrationDraftPreviewUrl] = useState<string | null>(null);
   const [draftPreviewUrl, setDraftPreviewUrl] = useState<string | null>(null);
   const [certificateUrl, setCertificateUrl] = useState<string | null>(null);
   const [idCardFront, setIdCardFront] = useState<string | null>(null);
   const [idCardBack, setIdCardBack] = useState<string | null>(null);
-  const [editorState, setEditorState] = useState<LifeCertificateEditorState>(DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE);
   const [hasDownloadedFinalCertificate, setHasDownloadedFinalCertificate] = useState(false);
   const finalizingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -143,16 +136,15 @@ export function MembershipContent({ initialTier = "life", autoScroll = false }: 
   useEffect(() => {
     setCertificateUrl(member?.certificate_data_url || null);
     setDraftPreviewUrl(member?.certificate_draft_data_url || null);
-    setEditorState(normalizeLifeCertificateEditorState(member?.certificate_editor_state));
   }, [member]);
 
   useEffect(() => {
-    if (!member || member.membership_tier !== "life" || activeTab !== "dashboard") return;
+    if (!member || activeTab !== "dashboard") return;
     let cancelled = false;
 
     const refreshPreview = async () => {
       try {
-        const preview = await generateLifeCertificateDraft(member, editorState);
+        const preview = await generateLifeCertificateDraft(member);
         if (!cancelled) setDraftPreviewUrl(preview);
       } catch {
         if (!cancelled) setError("Failed to render the certificate draft.");
@@ -163,7 +155,7 @@ export function MembershipContent({ initialTier = "life", autoScroll = false }: 
     return () => {
       cancelled = true;
     };
-  }, [activeTab, editorState, member]);
+  }, [activeTab, member]);
 
   useEffect(() => {
     if (!member || member.status !== "approved" || activeTab !== "dashboard") return;
@@ -176,10 +168,7 @@ export function MembershipContent({ initialTier = "life", autoScroll = false }: 
       setSavingCertificate(true);
       setError("");
       try {
-        const finalCertificate = await generateCertificate(
-          member,
-          member.membership_tier === "life" ? { editorState: member.certificate_editor_state } : undefined,
-        );
+        const finalCertificate = await generateCertificate(member);
         if (cancelled) return;
         setCertificateUrl(finalCertificate);
         const saved = await saveMemberCertificate(finalCertificate);
@@ -237,16 +226,32 @@ export function MembershipContent({ initialTier = "life", autoScroll = false }: 
     setForm((current) => ({ ...current, [key]: value }));
   };
 
+  useEffect(() => {
+    let cancelled = false;
+    const previewTimer = window.setTimeout(() => {
+      generateLifeCertificateDraft(registrationPreviewMember)
+        .then((preview) => {
+          if (!cancelled) setRegistrationDraftPreviewUrl(preview);
+        })
+        .catch(() => {
+          if (!cancelled) setRegistrationDraftPreviewUrl(null);
+        });
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(previewTimer);
+    };
+  }, [form.membership_tier, registrationPreviewMember]);
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setRegistering(true);
     try {
       const photo_data_url = await fileToDataUrl(photoFile);
-      const certificate_draft_data_url = form.membership_tier === "life"
-        ? await generateLifeCertificateDraft({ ...registrationPreviewMember, photo_data_url }, editorState)
-        : undefined;
-      const created = await registerMember({ ...form, photo_data_url, certificate_editor_state: editorState, certificate_draft_data_url });
+      const certificate_draft_data_url = await generateLifeCertificateDraft({ ...registrationPreviewMember, photo_data_url });
+      const created = await registerMember({ ...form, photo_data_url, certificate_draft_data_url });
       setMember(created);
       setActiveTab("dashboard");
       setIdCardFront(null);
@@ -275,27 +280,6 @@ export function MembershipContent({ initialTier = "life", autoScroll = false }: 
     }
   };
 
-  const persistDraft = async (submitForReview: boolean) => {
-    if (!member) return;
-    setSavingDraft(true);
-    setError("");
-    try {
-      const preview = await generateLifeCertificateDraft(member, editorState);
-      setDraftPreviewUrl(preview);
-      const response = await saveMemberCertificateDraft(preview, editorState, submitForReview);
-      setMember((current) => current ? {
-        ...current,
-        certificate_draft_data_url: preview,
-        certificate_editor_state: editorState,
-        certificate_submitted_at: response.submitted_at || current.certificate_submitted_at,
-      } : current);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save the certificate draft.");
-    } finally {
-      setSavingDraft(false);
-    }
-  };
-
   const handleGenerateDocuments = async () => {
     if (!member || member.status !== "approved") return;
     setGeneratingDocs(true);
@@ -318,10 +302,10 @@ export function MembershipContent({ initialTier = "life", autoScroll = false }: 
     setLoginIdentifier("");
     setLoginPassword("");
     setCertificateUrl(null);
+    setRegistrationDraftPreviewUrl(null);
     setDraftPreviewUrl(null);
     setIdCardFront(null);
     setIdCardBack(null);
-    setEditorState(DEFAULT_LIFE_CERTIFICATE_EDITOR_STATE);
     setRegistrationPhotoPreview(undefined);
   };
 
@@ -345,7 +329,7 @@ export function MembershipContent({ initialTier = "life", autoScroll = false }: 
         <div className="relative max-w-5xl mx-auto text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-[#c9a84c]/40 bg-[#c9a84c]/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-[#c9a84c] mb-6">Membership Portal</span>
           <h1 className="font-serif text-4xl md:text-5xl font-bold text-white mb-4">LIS Academy Membership Registration and Login</h1>
-          <p className="text-white/65 text-lg max-w-3xl mx-auto">Register, prepare your certificate draft on the raw Canva layout, submit it to admin, and download the approved final certificate after membership approval.</p>
+          <p className="text-white/65 text-lg max-w-3xl mx-auto">Register, submit your automatically generated certificate draft, and download the approved final certificate after membership approval.</p>
         </div>
       </section>
 
@@ -378,11 +362,11 @@ export function MembershipContent({ initialTier = "life", autoScroll = false }: 
             </div>
 
             <div className="rounded-3xl p-6 bg-[#0d1b3e] text-white border border-white/10">
-              <h3 className="font-serif text-xl mb-3">Canva Pipeline</h3>
+              <h3 className="font-serif text-xl mb-3">Certificate Pipeline</h3>
               <ul className="space-y-2 text-sm text-white/70">
-                <li>Application uses `rawwithoutsign.png` for the editable member draft.</li>
-                <li>Members can adjust text and photo placement before submitting to admin.</li>
-                <li>After approval, the final certificate uses `Copy of 1326 LISA Life Membership Certificates.png` and shows the membership number on login.</li>
+                <li>The unsigned Canva certificate is generated automatically for the member draft.</li>
+                <li>The signed Canva certificate is generated after admin approval.</li>
+                <li>Name, photo, membership number, and issue date are placed using fixed LIS Academy template positions.</li>
               </ul>
             </div>
           </div>
@@ -449,18 +433,15 @@ export function MembershipContent({ initialTier = "life", autoScroll = false }: 
 
                     <Field label="Photograph (used for card and certificate) *" icon={<ImagePlus size={14} />}><input required type="file" accept="image/*" onChange={(e) => { const nextFile = e.target.files?.[0] || null; setPhotoFile(nextFile); buildPreviewPhotoUrl(nextFile, setRegistrationPhotoPreview); }} className={`${inputCls} file:mr-4 file:rounded-full file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700`} /></Field>
 
-                    {form.membership_tier === "life" && (
+                    {registrationDraftPreviewUrl && (
                       <div className="rounded-3xl border border-slate-200 bg-white p-5">
-                        <div className="flex items-center gap-2 mb-4 font-semibold text-[#0d1b3e]"><SlidersHorizontal size={18} className="text-[#c9a84c]" /> Live Certificate Preview Before Signup</div>
-                        <LifeCertificateEditor member={registrationPreviewMember} editorState={editorState} onChange={setEditorState} />
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <RangeField label="Name X" value={editorState.nameX} min={950} max={1350} onChange={(value) => setEditorState((current) => ({ ...current, nameX: value }))} />
-                          <RangeField label="Name Y" value={editorState.nameY} min={700} max={900} onChange={(value) => setEditorState((current) => ({ ...current, nameY: value }))} />
-                          <RangeField label="Name Size" value={editorState.nameFontSize} min={36} max={68} onChange={(value) => setEditorState((current) => ({ ...current, nameFontSize: value }))} />
-                          <RangeField label="Detail Y" value={editorState.detailY} min={780} max={930} onChange={(value) => setEditorState((current) => ({ ...current, detailY: value }))} />
-                          <RangeField label="Detail Size" value={editorState.detailFontSize} min={28} max={58} onChange={(value) => setEditorState((current) => ({ ...current, detailFontSize: value }))} />
-                          <RangeField label="Photo Size" value={editorState.photoRadius} min={120} max={220} onChange={(value) => setEditorState((current) => ({ ...current, photoRadius: value }))} />
-                        </div>
+                        <h3 className="mb-4 flex items-center gap-2 font-semibold text-[#0d1b3e]">
+                          <Award size={18} className="text-[#c9a84c]" /> Certificate Preview
+                        </h3>
+                        <p className="mb-4 text-sm text-slate-500">
+                          This unsigned preview is generated automatically from your membership details and will be sent to admin when you register.
+                        </p>
+                        <img src={registrationDraftPreviewUrl} alt="Certificate preview" className="w-full rounded-2xl border border-slate-200 shadow-sm" />
                       </div>
                     )}
 
@@ -525,25 +506,13 @@ export function MembershipContent({ initialTier = "life", autoScroll = false }: 
                             : "Your membership application has been created successfully. If you would like to support LIS Academy further, you can also contribute through the donation gateway."}
                         />
 
-                        {member.membership_tier === "life" && member.status !== "approved" && (
+                        {member.status !== "approved" && (
                           <>
                             <div className="rounded-3xl border border-slate-200 bg-white p-5">
-                              <div className="flex items-center gap-2 mb-4 font-semibold text-[#0d1b3e]"><SlidersHorizontal size={18} className="text-[#c9a84c]" /> Certificate Draft Controls</div>
-                              <LifeCertificateEditor member={member} editorState={editorState} onChange={setEditorState} />
-                              <div className="grid md:grid-cols-2 gap-4">
-                                <RangeField label="Name X" value={editorState.nameX} min={950} max={1350} onChange={(value) => setEditorState((current) => ({ ...current, nameX: value }))} />
-                                <RangeField label="Name Y" value={editorState.nameY} min={700} max={900} onChange={(value) => setEditorState((current) => ({ ...current, nameY: value }))} />
-                                <RangeField label="Name Size" value={editorState.nameFontSize} min={36} max={68} onChange={(value) => setEditorState((current) => ({ ...current, nameFontSize: value }))} />
-                                <RangeField label="Detail Y" value={editorState.detailY} min={780} max={930} onChange={(value) => setEditorState((current) => ({ ...current, detailY: value }))} />
-                                <RangeField label="Detail Size" value={editorState.detailFontSize} min={28} max={58} onChange={(value) => setEditorState((current) => ({ ...current, detailFontSize: value }))} />
-                                <RangeField label="Photo Size" value={editorState.photoRadius} min={120} max={220} onChange={(value) => setEditorState((current) => ({ ...current, photoRadius: value }))} />
-                              </div>
-                              <div className="mt-4 flex flex-wrap gap-3">
-                                <ActionButton onClick={() => persistDraft(false)} icon={<Award size={14} />} label={savingDraft ? "Saving..." : "Save Draft"} />
-                                <ActionButton onClick={() => persistDraft(true)} icon={<Send size={14} />} label={savingDraft ? "Submitting..." : "Submit to Admin"} secondary />
-                              </div>
+                              <div className="flex items-center gap-2 mb-3 font-semibold text-[#0d1b3e]"><Award size={18} className="text-[#c9a84c]" /> Certificate Draft</div>
+                              <p className="text-sm text-slate-500">Your unsigned certificate draft was generated automatically from your membership details and sent to admin for approval.</p>
                               <p className="mt-4 text-sm text-slate-500">
-                                {member.certificate_submitted_at ? `Submitted to admin on ${new Date(member.certificate_submitted_at).toLocaleString("en-IN")}.` : "Adjust the preview, save it, then submit it for admin approval."}
+                                {member.certificate_submitted_at ? `Submitted to admin on ${new Date(member.certificate_submitted_at).toLocaleString("en-IN")}.` : "Submitted to admin with your membership application."}
                               </p>
                             </div>
 
@@ -638,129 +607,6 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
-function LifeCertificateEditor({
-  member,
-  editorState,
-  onChange,
-}: {
-  member: Member;
-  editorState: LifeCertificateEditorState;
-  onChange: React.Dispatch<React.SetStateAction<LifeCertificateEditorState>>;
-}) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [dragTarget, setDragTarget] = useState<"name" | "detail" | "photo" | null>(null);
-
-  const startDrag = (target: "name" | "detail" | "photo") => (event: ReactPointerEvent<HTMLDivElement>) => {
-    const container = containerRef.current;
-    if (!container) return;
-    event.preventDefault();
-    setDragTarget(target);
-    event.currentTarget.setPointerCapture(event.pointerId);
-
-    const move = (clientX: number, clientY: number) => {
-      const rect = container.getBoundingClientRect();
-      const x = ((clientX - rect.left) / rect.width) * LIFE_CERTIFICATE_CANVAS_WIDTH;
-      const y = ((clientY - rect.top) / rect.height) * LIFE_CERTIFICATE_CANVAS_HEIGHT;
-      onChange((current) => {
-        if (target === "name") {
-          return { ...current, nameX: clamp(x, 780, 1400), nameY: clamp(y, 690, 910) };
-        }
-        if (target === "detail") {
-          return { ...current, detailX: clamp(x, 780, 1400), detailY: clamp(y, 760, 960) };
-        }
-        return { ...current, photoX: clamp(x, 180, 540), photoY: clamp(y, 760, 1160) };
-      });
-    };
-
-    move(event.clientX, event.clientY);
-
-    const handlePointerMove = (moveEvent: PointerEvent) => move(moveEvent.clientX, moveEvent.clientY);
-    const handlePointerUp = () => {
-      setDragTarget(null);
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp, { once: true });
-  };
-
-  const name = member.name.trim().toUpperCase();
-  const detail = member.custom_detail?.trim() || [member.designation, member.institution].filter(Boolean).join(", ");
-  const photo = member.photo_data_url || member.photo_url;
-
-  return (
-    <div className="mb-5">
-      <div className="mb-3 text-sm text-slate-500">Drag the highlighted items directly on the certificate to make minor shifts before submitting to admin.</div>
-      <div
-        ref={containerRef}
-        className="relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm touch-none select-none"
-        style={{ aspectRatio: `${LIFE_CERTIFICATE_CANVAS_WIDTH} / ${LIFE_CERTIFICATE_CANVAS_HEIGHT}` }}
-      >
-        <img src="/membership/rawwithoutsign.png" alt="Raw certificate background" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
-
-        <div
-          onPointerDown={startDrag("name")}
-          className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-lg border px-3 py-1 text-center font-bold uppercase shadow-sm ${dragTarget === "name" ? "cursor-grabbing border-[#0d1b3e] bg-[#0d1b3e]/15" : "border-[#c9a84c] bg-white/85"}`}
-          style={{
-            left: `${(editorState.nameX / LIFE_CERTIFICATE_CANVAS_WIDTH) * 100}%`,
-            top: `${(editorState.nameY / LIFE_CERTIFICATE_CANVAS_HEIGHT) * 100}%`,
-            color: "#1e2a8a",
-            fontFamily: "Georgia, serif",
-            fontSize: `${Math.max(14, editorState.nameFontSize / 2.8)}px`,
-            maxWidth: "48%",
-          }}
-        >
-          {name}
-        </div>
-
-        <div
-          onPointerDown={startDrag("detail")}
-          className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-lg border px-3 py-1.5 text-center shadow-sm ${dragTarget === "detail" ? "cursor-grabbing border-[#0d1b3e] bg-[#0d1b3e]/15" : "border-[#c9a84c] bg-white/85"}`}
-          style={{
-            left: `${(editorState.detailX / LIFE_CERTIFICATE_CANVAS_WIDTH) * 100}%`,
-            top: `${(editorState.detailY / LIFE_CERTIFICATE_CANVAS_HEIGHT) * 100}%`,
-            color: "#2d2d2d",
-            fontFamily: "Georgia, serif",
-            fontSize: `${Math.max(12, editorState.detailFontSize / 2.8)}px`,
-            maxWidth: "52%",
-            lineHeight: 1.1,
-          }}
-        >
-          {detail}
-        </div>
-
-        {photo && (
-          <div
-            onPointerDown={startDrag("photo")}
-            className={`absolute -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border-4 shadow-md ${dragTarget === "photo" ? "cursor-grabbing border-[#0d1b3e]" : "cursor-grab border-white"}`}
-            style={{
-              left: `${(editorState.photoX / LIFE_CERTIFICATE_CANVAS_WIDTH) * 100}%`,
-              top: `${(editorState.photoY / LIFE_CERTIFICATE_CANVAS_HEIGHT) * 100}%`,
-              width: `${(editorState.photoRadius * 2 / LIFE_CERTIFICATE_CANVAS_WIDTH) * 100}%`,
-              aspectRatio: "1 / 1",
-            }}
-          >
-            <img src={photo} alt="Member preview" className="h-full w-full object-cover" draggable={false} />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function RangeField({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange: (value: number) => void }) {
-  return (
-    <label className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <div className="flex items-center justify-between text-sm font-medium text-slate-700 mb-3">
-        <span>{label}</span>
-        <span className="text-slate-400">{Math.round(value)}</span>
-      </div>
-      <input type="range" min={min} max={max} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-[#c9a84c]" />
-    </label>
-  );
-}
-
 function ActionButton({ onClick, icon, label, secondary = false }: { onClick: () => void; icon: ReactNode; label: string; secondary?: boolean }) {
   return (
     <button type="button" onClick={onClick} className="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium transition-all hover:-translate-y-0.5" style={secondary ? { background: "#e2e8f0", color: "#334155" } : { background: "#0d1b3e", color: "#fff" }}>
@@ -793,7 +639,3 @@ function DonatePrompt({ title, description }: { title: string; description: stri
 }
 
 const inputCls = "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-all focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20";
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
