@@ -1,9 +1,19 @@
 import jwt from "jsonwebtoken";
+import crypto from "node:crypto";
 
-const jwtSecret = process.env.JWT_SECRET;
+const jwtSecret = getJwtSecret();
 
-if (!jwtSecret) {
-  throw new Error("JWT_SECRET is not set. Add a strong JWT secret to the server environment.");
+function getJwtSecret() {
+  const configuredSecret = String(process.env.JWT_SECRET || "").trim();
+  if (configuredSecret) {
+    return configuredSecret;
+  }
+
+  console.warn(
+    "JWT_SECRET is not set. Using a generated runtime secret; set JWT_SECRET in production to keep sessions valid across restarts.",
+  );
+
+  return crypto.randomBytes(64).toString("hex");
 }
 
 export function signToken(payload) {
