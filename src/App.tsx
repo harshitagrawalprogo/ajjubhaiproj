@@ -48,6 +48,7 @@ const App = () => (
           <Route path="/about" element={<About />} />
           <Route path="/governance" element={<Governance />} />
           <Route path="/research-support" element={<ResearchSupport />} />
+          <Route path="/program" element={<Programs />} />
           <Route path="/programs" element={<Programs />} />
           <Route path="/programs/:slug" element={<ProgramDetail />} />
           <Route path="/library-automation" element={<LibraryAutomation />} />

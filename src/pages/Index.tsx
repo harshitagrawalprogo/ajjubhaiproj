@@ -24,7 +24,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <TopBar onHeightChange={handleHeightChange} />
       <Navbar topBarHeight={topBarHeight} />
-      <main style={{ paddingTop: 72 }}>
+      <main style={{ paddingTop: topBarHeight + 52 }}>
         <MarqueeStrip />
         <HeroSection />
         <AboutSection />

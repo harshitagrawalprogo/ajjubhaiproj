@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Facebook, Twitter, Linkedin, Youtube, Instagram } from "lucide-react";
 import { getDefaultSection, getSection } from "@/lib/contentDb";
 
@@ -18,9 +18,26 @@ export const TOPBAR_HEIGHT = 72; // px when visible
 
 export default function TopBar({ onHeightChange }: TopBarProps) {
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>(() => getDefaultSection("social"));
+  const topBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    onHeightChange(TOPBAR_HEIGHT);
+    const node = topBarRef.current;
+    if (!node) {
+      onHeightChange(TOPBAR_HEIGHT);
+      return;
+    }
+
+    const updateHeight = () => onHeightChange(Math.ceil(node.getBoundingClientRect().height));
+    updateHeight();
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(node);
+    window.addEventListener("resize", updateHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateHeight);
+    };
   }, [onHeightChange]);
 
   useEffect(() => {
@@ -28,22 +45,17 @@ export default function TopBar({ onHeightChange }: TopBarProps) {
   }, []);
 
   return (
-    <div className="relative z-50">
+    <div ref={topBarRef} className="relative z-50">
       <div
         className="overflow-hidden"
         style={{ background: "#ffffff", borderBottom: "1px solid #e8e0d0" }}
       >
-        <div
-          className="max-w-full w-full flex items-center justify-between px-4 md:px-6 flex-wrap"
-          style={{ height: TOPBAR_HEIGHT }}
-        >
+        <div className="flex w-full flex-col items-center justify-center gap-2 px-3 py-2 md:h-[72px] md:flex-row md:justify-between md:px-6 md:py-0">
           {/* ── Left: Logo + Brand ─────────────────────── */}
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center justify-center gap-2 md:justify-start md:gap-3">
             <div
-              className="flex items-center justify-center rounded-full border-2 overflow-hidden flex-shrink-0"
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-2 md:h-12 md:w-12"
               style={{
-                width: 48,
-                height: 48,
                 borderColor: "#0d1b3e",
                 background: "#fff",
               }}
@@ -55,9 +67,9 @@ export default function TopBar({ onHeightChange }: TopBarProps) {
               />
             </div>
 
-            <div className="leading-none">
+            <div className="min-w-0 leading-none">
               <div
-                className="font-extrabold text-2xl tracking-wide"
+                className="whitespace-nowrap text-[clamp(1.55rem,8vw,2rem)] font-extrabold tracking-normal md:text-2xl md:tracking-wide"
                 style={{
                   background:
                     "linear-gradient(90deg, #1a2ee6 0%, #0d1b3e 40%, #1a2ee6 100%)",
@@ -70,7 +82,7 @@ export default function TopBar({ onHeightChange }: TopBarProps) {
                 LIS ACADEMY
               </div>
               <div
-                className="text-xs font-bold tracking-widest mt-0.5"
+                className="mt-0.5 whitespace-nowrap text-[clamp(0.62rem,3.2vw,0.85rem)] font-bold tracking-[0.16em] md:text-xs md:tracking-widest"
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
                 <span style={{ color: "#c0392b" }}>LEARN</span>
@@ -83,7 +95,7 @@ export default function TopBar({ onHeightChange }: TopBarProps) {
           </div>
 
           {/* ── Right: Socials ─────────────────────────── */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center justify-center gap-3 md:gap-1">
             {SOCIAL_ICONS.map(({ key, Icon, label }) => (
               <a
                 key={key}
@@ -91,7 +103,7 @@ export default function TopBar({ onHeightChange }: TopBarProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={label}
-                className="group flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 hover:scale-110"
+                className="group flex h-7 w-7 items-center justify-center rounded-full transition-all duration-200 hover:scale-110 md:h-9 md:w-9"
                 style={{ color: "#0d1b3e" }}
                 onMouseEnter={e => {
                   (e.currentTarget as HTMLElement).style.background = "#0d1b3e";
@@ -102,7 +114,7 @@ export default function TopBar({ onHeightChange }: TopBarProps) {
                   (e.currentTarget as HTMLElement).style.color = "#0d1b3e";
                 }}
               >
-                <Icon size={18} strokeWidth={1.8} />
+                <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
               </a>
             ))}
           </div>

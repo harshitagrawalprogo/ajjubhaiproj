@@ -55,7 +55,7 @@ export default function HeroSection() {
 
   return (
     <section
-      className="relative min-h-[calc(100vh-108px)] flex items-center justify-center overflow-hidden bg-[#0d1b3e]"
+      className="relative flex h-[58vw] min-h-[210px] max-h-[360px] items-center justify-center overflow-hidden bg-[#0d1b3e] md:h-auto md:min-h-[calc(100vh-108px)] md:max-h-none"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -88,7 +88,7 @@ export default function HeroSection() {
       {/* Left arrow */}
       <button
         onClick={() => navigate(-1)}
-        className="absolute left-5 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
+        className="absolute left-3 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full transition-all duration-200 hover:scale-110 active:scale-95 md:left-5 md:h-12 md:w-12"
         style={{
           background: "rgba(255,255,255,0.1)",
           border: "1px solid rgba(255,255,255,0.2)",
@@ -102,7 +102,7 @@ export default function HeroSection() {
       {/* Right arrow */}
       <button
         onClick={() => navigate(1)}
-        className="absolute right-5 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
+        className="absolute right-3 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full transition-all duration-200 hover:scale-110 active:scale-95 md:right-5 md:h-12 md:w-12"
         style={{
           background: "rgba(255,255,255,0.1)",
           border: "1px solid rgba(255,255,255,0.2)",
@@ -114,7 +114,7 @@ export default function HeroSection() {
       </button>
 
       {/* Slide dots */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+      <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 md:bottom-10">
         {carouselImages.map((_, i) => (
           <button
             key={i}

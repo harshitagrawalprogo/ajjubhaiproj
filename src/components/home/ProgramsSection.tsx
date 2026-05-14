@@ -4,7 +4,7 @@ import { GraduationCap, FlaskConical, Wrench, Award, ArrowRight } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-const programs = [
+export const homePrograms = [
   {
     icon: GraduationCap,
     title: "Library Technology Training",
@@ -68,7 +68,7 @@ export default function ProgramsSection() {
         </motion.div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {programs.map((program, i) => (
+          {homePrograms.map((program, i) => (
             <motion.div
               key={program.title}
               initial={{ opacity: 0, y: 30 }}

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, BriefcaseBusiness } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
 import PageHeader from "@/components/PageHeader";
+import { homePrograms } from "@/components/home/ProgramsSection";
 import { allProductsAndServices, programPages } from "@/lib/programPages";
 
 function FadeIn({ children, delay = 0, className = "" }: { children: ReactNode; delay?: number; className?: string }) {
@@ -41,7 +42,42 @@ export default function Programs() {
       <section className="section-padding bg-[#0d1b3e]">
         <div className="mx-auto max-w-6xl">
           <FadeIn>
-            <aside className="rounded-2xl border border-white/10 bg-white/5 p-7">
+            <div className="mb-8">
+              <div className="text-center">
+                <h2 className="font-serif text-3xl font-bold text-white md:text-4xl">Our Programs</h2>
+                <p className="mx-auto mt-3 max-w-3xl text-sm leading-relaxed text-white/60 md:text-base">
+                  Start with the core programs featured on the home page, then explore the full products and services list below.
+                </p>
+              </div>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {homePrograms.map((program, i) => (
+                  <FadeIn key={program.title} delay={0.05 + i * 0.05}>
+                    <Link
+                      to={program.link}
+                      className="group flex h-full flex-col rounded-xl border border-white/10 bg-white/5 p-5 transition-all hover:-translate-y-1 hover:bg-white/10"
+                    >
+                      <div
+                        className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl"
+                        style={{ backgroundColor: `${program.hexColor}22` }}
+                      >
+                        <program.icon size={24} style={{ color: program.hexColor }} />
+                      </div>
+                      <h3 className="font-serif text-lg font-semibold leading-snug text-white transition-colors" style={{ color: "white" }}>
+                        {program.title}
+                      </h3>
+                      <p className="mt-3 flex-1 text-sm leading-relaxed text-white/65">{program.description}</p>
+                      <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold" style={{ color: program.hexColor }}>
+                        Learn more <ArrowRight size={14} />
+                      </span>
+                    </Link>
+                  </FadeIn>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn>
+            <aside className="rounded-xl border border-white/10 bg-white/5 p-7">
               <div className="grid gap-7 lg:grid-cols-[0.35fr,1fr] lg:items-start">
                 <div>
                   <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#c9a84c]/15">
@@ -68,14 +104,14 @@ export default function Programs() {
           </FadeIn>
 
           <FadeIn className="mt-8">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-7">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-7">
               <h2 className="text-center font-serif text-3xl font-bold text-white">{allProductsAndServices.servicesTitle}</h2>
               <p className="mx-auto mt-3 max-w-3xl text-center text-white/55">
                 The following content is structured from the products and services document as service headings and service descriptions.
               </p>
               <dl className="mt-8 grid gap-3 lg:grid-cols-2">
                 {allProductsAndServices.services.map((service) => (
-                  <div key={service.term} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <div key={service.term} className="rounded-lg border border-white/10 bg-white/5 p-4">
                     <dt className="text-sm font-semibold leading-relaxed text-white">{service.term}</dt>
                     <dd className="mt-2 text-sm leading-relaxed text-white/70">{service.details}</dd>
                   </div>
