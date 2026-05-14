@@ -1,5 +1,4 @@
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Users } from "lucide-react";
+import { useParams } from "react-router-dom";
 import { motion, useInView } from "framer-motion";
 import { useRef, type ReactNode } from "react";
 import PageLayout from "@/components/PageLayout";
@@ -37,43 +36,16 @@ export default function ProgramDetail() {
         tag={program.eyebrow}
         title={program.title}
         description={program.summary}
-      >
-        <Link to="/programs" className="inline-flex items-center gap-2 text-sm font-semibold text-[#f0d080] hover:text-white">
-          <ArrowLeft size={16} /> Back to all programs
-        </Link>
-      </PageHeader>
+      />
 
       <section className="section-padding bg-[#0d1b3e]">
         <div className="mx-auto max-w-6xl">
           <FadeIn>
             <div className="space-y-8">
-              <aside className="rounded-2xl border border-white/10 bg-white/5 p-7">
-                <div className="grid gap-7 lg:grid-cols-[0.35fr,1fr] lg:items-start">
-                  <div>
-                    <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: `${program.accent}22` }}>
-                      <Icon size={30} style={{ color: program.accent }} />
-                    </div>
-                    <h2 className="font-serif text-2xl font-bold text-white">Who It Supports</h2>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {program.audience.map((item) => (
-                      <div key={item} className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/10 px-4 py-3 text-sm text-white/70">
-                        <Users size={15} className="mt-0.5 shrink-0" style={{ color: program.accent }} />
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <Link
-                  to="/contact"
-                  className="mt-7 inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-[#0d1b3e] transition-all hover:-translate-y-0.5"
-                  style={{ background: "linear-gradient(135deg, #f0d080, #c9a84c)" }}
-                >
-                  Contact for Details <ArrowRight size={15} />
-                </Link>
-              </aside>
-
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-7">
+                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: `${program.accent}22` }}>
+                  <Icon size={30} style={{ color: program.accent }} />
+                </div>
                 <h2 className="text-center font-serif text-3xl font-bold text-white">{program.servicesTitle}</h2>
                 <p className="mx-auto mt-3 max-w-3xl text-center text-white/55">
                   These offerings can be delivered as workshops, consultancy support, institutional engagements, audits, implementation projects, or customized capacity-building programs.

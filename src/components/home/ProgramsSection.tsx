@@ -1,6 +1,12 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { GraduationCap, FlaskConical, Wrench, Award, ArrowRight } from "lucide-react";
+import {
+  GraduationCap,
+  FlaskConical,
+  Wrench,
+  Award,
+  ArrowRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -8,7 +14,8 @@ export const homePrograms = [
   {
     icon: GraduationCap,
     title: "Library Technology Training",
-    description: "Hands-on training for LIS professionals on automation, digital services, information tools, and emerging practices in modern libraries.",
+    description:
+      "Hands-on training for LIS professionals on automation, digital services, information tools, and emerging practices in modern libraries.",
     color: "bg-accent",
     link: "/programs/library-technology-training",
     hexColor: "#c0392b",
@@ -17,7 +24,8 @@ export const homePrograms = [
   {
     icon: FlaskConical,
     title: "Research Productivity Support",
-    description: "Workshops and seminars for teachers and research scholars to improve publication quality, visibility, and institutional research performance.",
+    description:
+      "Workshops and seminars for teachers and research scholars to improve publication quality, visibility, and institutional research performance.",
     color: "bg-gold-light",
     link: "/programs/research-productivity-support",
     hexColor: "#e67e22",
@@ -26,7 +34,8 @@ export const homePrograms = [
   {
     icon: Wrench,
     title: "Institutional Technology Services",
-    description: "Implementation support for Koha, DSpace, EPrints, and IRINS to strengthen library systems, repositories, and research information management.",
+    description:
+      "Implementation support for Koha, DSpace, EPrints, and IRINS to strengthen library systems, repositories, and research information management.",
     color: "bg-accent",
     link: "/programs/institutional-technology-support",
     hexColor: "#27ae60",
@@ -35,7 +44,8 @@ export const homePrograms = [
   {
     icon: Award,
     title: "Accreditation and Ranking Consultancy",
-    description: "Consultancy for NBA, NAAC, and NIRF readiness, especially around library services, research visibility, and documentation support.",
+    description:
+      "Consultancy for NBA, NAAC, and NIRF readiness, especially around library services, research visibility, and documentation support.",
     color: "bg-gold-light",
     link: "/programs/accreditation-ranking-consultancy",
     hexColor: "#2980b9",
@@ -57,13 +67,15 @@ export default function ProgramsSection() {
           className="text-center mb-16"
         >
           <h2 className="font-serif text-5xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 leading-tight">
-            Our Programs
+            Our Programs and Services
           </h2>
           <h3 className="text-xl md:text-5xl font-medium text-secondary mb-6">
             Institution-Centric Solution
           </h3>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            LIS Academy serves professional development, technology implementation, and academic support to different types of libraries.
+            LIS Academy serves professional development, technology
+            implementation, and academic support to different types of
+            libraries.
           </p>
         </motion.div>
 
@@ -76,14 +88,33 @@ export default function ProgramsSection() {
               transition={{ duration: 0.5, delay: 0.1 + i * 0.1 }}
               className="group p-0 rounded-xl bg-card border border-border hover-lift cursor-pointer flex flex-col relative overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
             >
-              <div className="absolute top-0 left-0 w-full h-1 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out z-10" style={{ backgroundColor: program.hexColor }}></div>
-              <Link to={program.link} className="flex-grow flex flex-col p-6 h-full relative z-0">
-                <div className={`w-14 h-14 rounded-xl ${program.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
-                  <program.icon className={`text-primary transition-colors duration-300 ${program.hoverTextClass}`} size={26} />
+              <div
+                className="absolute top-0 left-0 w-full h-1 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out z-10"
+                style={{ backgroundColor: program.hexColor }}
+              ></div>
+              <Link
+                to={program.link}
+                className="flex-grow flex flex-col p-6 h-full relative z-0"
+              >
+                <div
+                  className={`w-14 h-14 rounded-xl ${program.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}
+                >
+                  <program.icon
+                    className={`text-primary transition-colors duration-300 ${program.hoverTextClass}`}
+                    size={26}
+                  />
                 </div>
-                <h3 className={`font-serif text-xl font-semibold text-foreground mb-3 transition-colors duration-300 ${program.hoverTextClass}`}>{program.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed mb-4 flex-grow">{program.description}</p>
-                <span className={`inline-flex items-center gap-1 text-sm font-medium transition-all mt-auto pt-2 text-primary ${program.hoverTextClass}`}>
+                <h3
+                  className={`font-serif text-xl font-semibold text-foreground mb-3 transition-colors duration-300 ${program.hoverTextClass}`}
+                >
+                  {program.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4 flex-grow">
+                  {program.description}
+                </p>
+                <span
+                  className={`inline-flex items-center gap-1 text-sm font-medium transition-all mt-auto pt-2 text-primary ${program.hoverTextClass}`}
+                >
                   Learn more <ArrowRight size={14} />
                 </span>
               </Link>
@@ -99,7 +130,7 @@ export default function ProgramsSection() {
         >
           <Button variant="hero" size="lg" asChild>
             <Link to="/programs">
-              View All Services <ArrowRight size={16} />
+              View All Products and Services <ArrowRight size={16} />
             </Link>
           </Button>
         </motion.div>
